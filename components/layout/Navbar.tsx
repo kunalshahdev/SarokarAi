@@ -3,6 +3,7 @@
 import { useState, useEffect, useSyncExternalStore, useCallback } from "react";
 import Link from "next/link";
 import Logo from "../brand/Logo";
+import NepalFlag from "@/components/brand/NepalFlag";
 
 const navLinks = [
   { label: "Services", href: "/#services" },
@@ -68,7 +69,7 @@ export default function Navbar() {
       {/* Announcement bar */}
       <div className="fixed top-0 left-0 right-0 z-[60] bg-accent text-white">
         <div className="mx-auto flex h-9 max-w-[1280px] items-center justify-center gap-2 px-5 text-xs font-medium tracking-wide">
-          <span aria-hidden>🇳🇵</span>
+          <NepalFlag className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">Built in Kathmandu for 5M+ Nepalis across 100+ countries</span>
           <span className="sm:hidden">For Nepalis worldwide</span>
           <Link href="/#how-it-works" className="underline underline-offset-2 opacity-90 hover:opacity-100 transition-opacity">

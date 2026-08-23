@@ -35,10 +35,6 @@
   --color-kct-border: #E8E2D4;
   --color-kct-muted: #75694F;
   --color-kct-muted-light: #6F6650;
-  --color-kct-tag-trending: #DC2626;
-  --color-kct-tag-nepal: #0D9488;
-  --color-kct-tag-tech: #6366F1;
-  --color-kct-tag-entertainment: #D946EF;
 }
 
 .dark {
@@ -72,10 +68,6 @@
   --color-kct-border: #2A2820;
   --color-kct-muted: #9A8E7A;
   --color-kct-muted-light: #8A7E68;
-  --color-kct-tag-trending: #F87171;
-  --color-kct-tag-nepal: #5EEAD4;
-  --color-kct-tag-tech: #A5B4FC;
-  --color-kct-tag-entertainment: #F0ABFC;
 }
 
 *,
@@ -257,7 +249,21 @@ input::placeholder {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *,
+/* K Cha Ta sub-brand scope: re-map accent to amber inside /k-cha-ta
+   so navbar CTA, focus rings, and ::selection follow the sub-brand */
+.kct-theme {
+  --color-accent: #E8920D;
+  --color-accent-hover: #D4830B;
+  --color-accent-light: #FFF5E0;
+}
+
+.dark .kct-theme {
+  --color-accent: #F0B429;
+  --color-accent-hover: #F5C84A;
+  --color-accent-light: #2A2510;
+}
+
+*,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;

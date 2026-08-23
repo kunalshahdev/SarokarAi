@@ -1,4 +1,5 @@
 import ScrollReveal from "@/components/shared/ScrollReveal";
+import HimalayaRidge from "@/components/brand/HimalayaRidge";
 
 const steps = [
   {
@@ -25,8 +26,9 @@ const steps = [
 
 export default function HowItWorks() {
   return (
-    <section id="how-it-works" className="scroll-mt-24 md:scroll-mt-28 py-20 md:py-28 bg-dark text-white">
-      <div className="mx-auto max-w-[1280px] px-5 md:px-8">
+    <section id="how-it-works" className="scroll-mt-24 md:scroll-mt-28 relative overflow-hidden py-20 md:py-28 bg-dark text-white">
+      <HimalayaRidge className="h-20 md:h-28 text-white" />
+      <div className="relative mx-auto max-w-[1280px] px-5 md:px-8">
         <ScrollReveal className="max-w-2xl">
           <h2 className="text-3xl sm:text-4xl md:text-[44px] font-bold tracking-tight leading-tight">
             Tell us what you&apos;re trying to do.

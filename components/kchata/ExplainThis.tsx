@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import NepalFlag from "@/components/brand/NepalFlag";
 
 const modes = [
   { id: "explain", label: "Explain", icon: "\uD83E\uDDE0" },
   { id: "chill", label: "Chill", icon: "\uD83D\uDE02" },
   { id: "tldr", label: "TL;DR", icon: "\u26A1" },
-  { id: "nepali", label: "Nepali", icon: "\uD83C\uDDF5\uD83C\uDDF3" },
+  { id: "nepali", label: "Nepali", icon: <NepalFlag className="h-3.5 w-3.5" /> },
   { id: "roman", label: "Roman Nepali", icon: "\u2328\uFE0F" },
   { id: "deep", label: "Deep Dive", icon: "\uD83E\uDD0D" },
 ];
@@ -32,10 +33,10 @@ export default function ExplainThis() {
   };
 
   return (
-    <section id="explain-this" className="scroll-mt-24 md:scroll-mt-28 py-16 md:py-24 bg-kct-surface border-t border-kct-border">
+    <section id="explain-this" className="scroll-mt-24 md:scroll-mt-28 py-20 md:py-28 bg-kct-surface border-t border-kct-border">
       <div className="mx-auto max-w-[1280px] px-5 md:px-8">
-        <div className="max-w-2xl mb-10">
-          <h2 className="text-3xl sm:text-4xl md:text-[44px] font-extrabold tracking-tight leading-[1.1]">
+        <div className="max-w-2xl mb-12">
+          <h2 className="text-3xl sm:text-4xl md:text-[44px] font-bold tracking-tight leading-tight">
             Explain this.
           </h2>
           <p className="mt-3 text-lg text-kct-muted">
@@ -44,7 +45,7 @@ export default function ExplainThis() {
         </div>
 
         {/* Mode pills */}
-        <div className="flex flex-wrap gap-2 mb-10">
+        <div className="flex flex-wrap gap-2 mb-12">
           {modes.map((mode) => (
             <button
               key={mode.id}
@@ -55,8 +56,8 @@ export default function ExplainThis() {
                 transition-all duration-200
                 ${
                   activeMode === mode.id
-                    ? "bg-foreground text-background shadow-[2px_2px_0px_rgba(0,0,0,0.08)]"
-                    : "bg-kct-card border-2 border-kct-border text-kct-muted hover:border-foreground/20 hover:text-foreground"
+                    ? "bg-foreground text-background shadow-sm"
+                    : "bg-kct-card border border-kct-border text-kct-muted hover:border-kct-accent/30 hover:text-foreground"
                 }
               `}
             >
@@ -72,7 +73,7 @@ export default function ExplainThis() {
             <button
               key={i}
               onClick={() => handleAsk(q)}
-              className="group text-left rounded-xl border-2 border-kct-border bg-kct-card p-5 transition-all duration-200 hover:border-foreground/15 hover:shadow-[3px_3px_0px_rgba(0,0,0,0.04)] hover:translate-x-[-1px] hover:translate-y-[-1px]"
+              className="group text-left rounded-xl border border-kct-border bg-kct-card p-5 shadow-card transition-all duration-200 hover:border-kct-accent/30 hover:shadow-card-hover hover:-translate-y-0.5"
             >
               <p className="text-base font-medium text-foreground leading-snug">
                 &ldquo;{q}&rdquo;

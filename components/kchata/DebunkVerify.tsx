@@ -70,7 +70,7 @@ export default function DebunkVerify() {
   };
 
   return (
-    <section id="verify" className="scroll-mt-24 md:scroll-mt-28 py-16 md:py-24 border-t border-kct-border bg-kct-surface/30">
+    <section id="verify" className="scroll-mt-24 md:scroll-mt-28 py-20 md:py-28 border-t border-kct-border bg-kct-surface/30">
       <div className="mx-auto max-w-[1280px] px-5 md:px-8">
         <div className="md:grid md:grid-cols-[1fr_1.25fr] md:gap-14 lg:gap-16 items-start">
           {/* Left Column */}
@@ -79,7 +79,7 @@ export default function DebunkVerify() {
               <div className="inline-flex items-center gap-2 rounded-full border border-kct-accent/30 bg-kct-accent/10 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-kct-accent mb-4">
                 <span>🛡️ Fact Check &amp; Debunk</span>
               </div>
-              <h2 className="text-3xl sm:text-4xl md:text-[42px] font-extrabold tracking-tight leading-[1.12] text-foreground">
+              <h2 className="text-3xl sm:text-4xl md:text-[44px] font-bold tracking-tight leading-tight text-foreground">
                 Suneko kura ho ki sachchai?
               </h2>
               <p className="mt-3 text-base sm:text-lg text-kct-muted leading-relaxed">
@@ -110,7 +110,7 @@ export default function DebunkVerify() {
           </div>
 
           {/* Right Column - Claim Input Box */}
-          <div className="rounded-2xl border-2 border-kct-border bg-kct-card p-6 md:p-8 shadow-sm">
+          <div className="rounded-2xl border border-kct-border bg-kct-card p-6 md:p-8 shadow-card">
             <div className="flex items-center justify-between mb-3">
               <label className="block text-sm font-bold text-foreground">
                 Paste or describe the claim:
@@ -137,7 +137,7 @@ export default function DebunkVerify() {
               }}
               placeholder='e.g. "The government is banning all VPNs in Nepal"'
               rows={4}
-              className="w-full rounded-xl border-2 border-kct-border bg-kct-surface px-4 py-3.5 text-base font-medium text-foreground placeholder:text-kct-muted-light resize-none transition-all duration-200 focus:border-kct-accent focus:bg-kct-card focus:outline-none focus:ring-0"
+              className="w-full rounded-xl border border-kct-border bg-kct-surface px-4 py-3.5 text-base font-medium text-foreground placeholder:text-kct-muted-light resize-none transition-all duration-200 focus:border-kct-accent focus:bg-kct-card focus:outline-none focus:ring-4 focus:ring-kct-accent/10"
             />
 
             {/* Quick Sample Rumors */}

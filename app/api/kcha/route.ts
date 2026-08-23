@@ -1,8 +1,19 @@
 import { NextRequest } from "next/server";
 import { handleChatRequest } from "@/lib/ai/handler";
 import type { SafetySetting } from "@/lib/ai/types";
+import {
+  getArticleById,
+  searchArticles,
+  formatNewsContext,
+  timeAgoLabel,
+  type NewsArticle,
+} from "@/lib/kcha/news-index";
+
+export const maxDuration = 60;
 
 const MAX_MESSAGES = 30;
+const RETRIEVAL_LIMIT = 6;
+const MAX_CONTEXT_CHARS = 9000;
 
 const SAFETY_SETTINGS: SafetySetting[] = [
   { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
@@ -83,33 +94,88 @@ function sanitizeForPrompt(input: string): string {
   return input.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "").slice(0, 3000);
 }
 
-async function fetchLiveNewsContext(origin: string): Promise<string> {
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
-    const trendingRes = await fetch(`${origin}/api/kcha/trending`, {
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
-    if (!trendingRes.ok) return "";
-    const trendingData = await trendingRes.json();
-    if (!trendingData.topics || trendingData.topics.length === 0) return "";
-    const headlineList = trendingData.topics
-      .map(
-        (t: { title: string; explanation: string; source: string; time: string }, idx: number) =>
-          `${idx + 1}. [${t.source} - ${t.time}] ${sanitizeForPrompt(t.title)}: ${sanitizeForPrompt(t.explanation)}`
-      )
-      .join("\n");
-    return `\n\n[LIVE NEWS CONTEXT]\n${headlineList}\n[/LIVE NEWS CONTEXT]`;
-  } catch (e) {
-    console.warn("Could not fetch live trending news for prompt injection:", e);
-    return "";
+export interface GroundedSource {
+  n: number;
+  title: string;
+  source: string;
+  url: string;
+  time: string;
+}
+
+interface Grounding {
+  contextBlock: string;
+  sources: GroundedSource[];
+}
+
+async function buildGrounding(
+  query: string,
+  articleId?: string
+): Promise<Grounding> {
+  const sources: GroundedSource[] = [];
+  const sections: string[] = [];
+  let focusArticle: NewsArticle | null = null;
+
+  if (articleId) {
+    try {
+      focusArticle = await getArticleById(articleId);
+    } catch {}
+    if (focusArticle) {
+      sources.push({
+        n: 1,
+        title: sanitizeForPrompt(focusArticle.title),
+        source: focusArticle.source,
+        url: focusArticle.url,
+        time: timeAgoLabel(focusArticle.publishedAt),
+      });
+      sections.push(
+        `[FOCUS ARTICLE — the user is asking about this story]\n` +
+          formatNewsContext([focusArticle]).replace(/^\[1\]/, "[1]")
+      );
+    }
   }
+
+  try {
+    const hits = await searchArticles(query, RETRIEVAL_LIMIT);
+    const relevant = hits.filter((h) => h.id !== focusArticle?.id);
+    const room = MAX_CONTEXT_CHARS - sections.join("\n\n").length;
+    if (relevant.length > 0 && room > 400) {
+      const nextNumber = sources.length + 1;
+      const block = formatNewsContext(relevant)
+        .split(/\n\n(?=\[\d+\])/)
+        .map((entry, i) => entry.replace(/^\[\d+\]/, `[${nextNumber + i}]`))
+        .join("\n\n");
+      if (block.length <= room) {
+        relevant.forEach((a, i) => {
+          sources.push({
+            n: nextNumber + i,
+            title: sanitizeForPrompt(a.title),
+            source: a.source,
+            url: a.url,
+            time: timeAgoLabel(a.publishedAt),
+          });
+        });
+        sections.push(block);
+      }
+    }
+  } catch {}
+
+  if (sections.length === 0) return { contextBlock: "", sources };
+
+  const contextBlock =
+    `\n\n[LIVE NEWS CONTEXT — retrieved just now from Nepali news feeds]\n` +
+    sections.join("\n\n") +
+    `\n[/LIVE NEWS CONTEXT]` +
+    `\n\nGROUNDING RULES (strict):` +
+    `\n- Treat LIVE NEWS CONTEXT as your primary evidence for anything current. Today's date matters.` +
+    `\n- When you state facts that come from these articles, cite them inline like [1] or [2] using the exact numbers above.` +
+    `\n- NEVER invent quotes, statistics, names, or events that are not in the context.` +
+    `\n- If the user's question is not covered by the context, say clearly "Yo topic ahile ko live coverage ma bhetina" and only then fall back to background knowledge, labeling it as background.` +
+    `\n- If articles conflict, say what is confirmed vs reported vs unverified.`;
+
+  return { contextBlock, sources };
 }
 
 export async function POST(request: NextRequest) {
-  const liveNewsContext = await fetchLiveNewsContext(request.nextUrl.origin);
-
   const currentYear = new Date().getFullYear();
   const currentDateStr = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -121,20 +187,37 @@ export async function POST(request: NextRequest) {
   return handleChatRequest(request, {
     maxMessages: MAX_MESSAGES,
     safetySettings: SAFETY_SETTINGS,
-    prepare: (lastUserMessage, body) => {
-      void lastUserMessage;
+    prepare: async (lastUserMessage, body) => {
       const requestedMode = typeof body.mode === "string" ? body.mode : "explain";
       const modeInstruction =
         modeInstructions[requestedMode] || modeInstructions.explain;
+
+      const articleId =
+        typeof body.articleId === "string" && body.articleId.length < 200
+          ? body.articleId
+          : undefined;
+
+      let grounding: Grounding = { contextBlock: "", sources: [] };
+      try {
+        grounding = await buildGrounding(lastUserMessage, articleId);
+      } catch (e) {
+        console.warn("[kcha] grounding retrieval failed", e);
+      }
 
       const fullSystemInstruction =
         `${kChaTaSystemPrompt}\n\nTEMPORAL ANCHOR: Today is ${currentDateStr} (Year: ${currentYear}).` +
         ` Always prioritize recent information and current ${currentYear} events.\n\n` +
         `CURRENT MODE INSTRUCTION:\n${modeInstruction}` +
-        liveNewsContext +
+        grounding.contextBlock +
         `\n\nLANGUAGE POLICY:\nUsers may communicate in Roman Nepali, Nepali Devanagari, English, or mixed Nepali-English.\nUnderstand informal Roman Nepali spelling and variations naturally.\nMatch the user's language naturally in every response.`;
 
-      return { systemPrompt: fullSystemInstruction, meta: null };
+      return {
+        systemPrompt: fullSystemInstruction,
+        meta:
+          grounding.sources.length > 0
+            ? { sources: grounding.sources }
+            : null,
+      };
     },
   });
 }

@@ -73,7 +73,7 @@ export default function DailyDrop() {
   }, []);
 
   return (
-    <section id="daily-drop" className="scroll-mt-24 md:scroll-mt-28 py-16 md:py-24 bg-foreground text-background">
+    <section id="daily-drop" className="scroll-mt-24 md:scroll-mt-28 py-20 md:py-28 bg-foreground text-background">
       <div className="mx-auto max-w-[1280px] px-5 md:px-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-12">
@@ -82,7 +82,7 @@ export default function DailyDrop() {
               <span className="h-1.5 w-1.5 rounded-full bg-kct-accent animate-pulse" />
               Updated live
             </div>
-            <h2 className="text-3xl sm:text-4xl md:text-[44px] font-extrabold tracking-tight leading-[1.1]">
+            <h2 className="text-3xl sm:text-4xl md:text-[44px] font-bold tracking-tight leading-tight">
               Today&apos;s 5
             </h2>
             <p className="mt-2 text-base text-background/60">
@@ -99,7 +99,7 @@ export default function DailyDrop() {
               href={`/k-cha-ta/chat?q=${encodeURIComponent(item.title)}`}
               className="group flex items-start gap-4 md:gap-6 py-6 md:py-7 border-t border-white/10 transition-colors hover:border-white/20"
             >
-              <span className="text-3xl md:text-4xl font-extrabold text-background/15 group-hover:text-kct-accent transition-colors shrink-0 w-16 md:w-20">
+              <span className="text-3xl md:text-4xl font-bold text-background/15 group-hover:text-kct-accent transition-colors shrink-0 w-16 md:w-20">
                 {item.num}
               </span>
               <div className="flex-1 min-w-0">

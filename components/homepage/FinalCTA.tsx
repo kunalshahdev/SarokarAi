@@ -1,10 +1,12 @@
 import Link from "next/link";
 import ScrollReveal from "@/components/shared/ScrollReveal";
+import MandalaRosette from "@/components/brand/MandalaRosette";
 
 export default function FinalCTA() {
   return (
-    <section className="py-20 md:py-28 border-t border-border">
-      <div className="mx-auto max-w-[1280px] px-5 md:px-8 text-center">
+    <section className="relative overflow-hidden py-20 md:py-28 border-t border-border">
+      <MandalaRosette className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[380px] w-[380px] md:h-[500px] md:w-[500px] text-accent opacity-[0.08]" />
+      <div className="relative mx-auto max-w-[1280px] px-5 md:px-8 text-center">
         <ScrollReveal>
           <h2 className="text-3xl sm:text-4xl md:text-[44px] font-bold tracking-tight leading-tight">
             Got something to figure out?

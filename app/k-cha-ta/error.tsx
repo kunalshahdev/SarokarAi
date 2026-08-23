@@ -15,7 +15,7 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center bg-kct-background px-6 text-center">
+    <div className="flex min-h-dvh flex-col items-center justify-center bg-kct-surface px-6 text-center">
       <p className="text-5xl mb-4">😵</p>
       <h2 className="text-xl font-semibold text-foreground mb-2">
         K cha bhane...
@@ -32,7 +32,7 @@ export default function Error({
         </button>
         <Link
           href="/k-cha-ta"
-          className="rounded-lg border-2 border-kct-border px-5 py-2.5 text-sm font-semibold text-kct-muted transition-colors hover:text-foreground"
+          className="rounded-lg border border-kct-border px-5 py-2.5 text-sm font-semibold text-kct-muted transition-colors hover:text-foreground"
         >
           Go back
         </Link>

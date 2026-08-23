@@ -21,10 +21,15 @@ export interface ChatHandlerOptions {
   prepare: (
     lastUserMessage: string,
     body: Record<string, unknown>
-  ) => {
-    systemPrompt: string;
-    meta?: Record<string, unknown> | null;
-  };
+  ) =>
+    | {
+        systemPrompt: string;
+        meta?: Record<string, unknown> | null;
+      }
+    | Promise<{
+        systemPrompt: string;
+        meta?: Record<string, unknown> | null;
+      }>;
   safetySettings?: SafetySetting[];
   maxMessages?: number;
 }
@@ -141,7 +146,7 @@ export async function handleChatRequest(
     [...messages].reverse().find((m) => m.role === "user")?.content || "";
 
   try {
-    const prepared = options.prepare(lastUserMessage, (body ?? {}) as Record<string, unknown>);
+    const prepared = await options.prepare(lastUserMessage, (body ?? {}) as Record<string, unknown>);
     const result = await chatWithFallback(trimHistory(messages), {
       systemPrompt: prepared.systemPrompt,
       safetySettings: options.safetySettings,

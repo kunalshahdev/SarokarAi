@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import Link from "next/link";
 import { getTrending, loadCachedTrending, TRENDING_CACHE_TTL_MS, type TrendingTopic } from "./trending-store";
+import NewsDrawer, { type DrawerTopic } from "./NewsDrawer";
 
 const demoTopics: TrendingTopic[] = [
   {
@@ -87,6 +87,7 @@ export default function TrendingNow() {
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [selectedTopic, setSelectedTopic] = useState<DrawerTopic | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchTrending = useCallback(async (showRefresh = false) => {
@@ -132,12 +133,12 @@ export default function TrendingNow() {
   }, [fetchTrending]);
 
   return (
-    <section id="trending" className="scroll-mt-24 md:scroll-mt-28 py-16 md:py-24">
+    <section id="trending" className="scroll-mt-24 md:scroll-mt-28 py-20 md:py-28">
       <div className="mx-auto max-w-[1280px] px-5 md:px-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-12">
           <div className="max-w-2xl">
-            <h2 className="text-3xl sm:text-4xl md:text-[44px] font-extrabold tracking-tight leading-[1.1]">
+            <h2 className="text-3xl sm:text-4xl md:text-[44px] font-bold tracking-tight leading-tight">
               What&apos;s everyone talking about?
             </h2>
             <p className="mt-3 text-lg text-kct-muted">
@@ -158,7 +159,7 @@ export default function TrendingNow() {
             {[0, 1, 2, 3, 4, 5].map((i) => (
               <div
                 key={i}
-                className={`rounded-2xl border-2 border-kct-border bg-kct-card p-6 md:p-7 ${
+                className={`rounded-2xl border border-kct-border bg-kct-card p-6 md:p-7 ${
                   i === 0 ? "md:col-span-2" : ""
                 }`}
               >
@@ -176,14 +177,36 @@ export default function TrendingNow() {
         ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
           {topics.map((topic, i) => (
-            <Link
+            <div
               key={topic.id}
-              href={`/k-cha-ta/chat?q=${encodeURIComponent(topic.title)}`}
+              role="button"
+              tabIndex={0}
+              onClick={() =>
+                setSelectedTopic({
+                  id: topic.id,
+                  title: topic.title,
+                  source: topic.source,
+                  time: topic.time,
+                  url: topic.link,
+                })
+              }
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setSelectedTopic({
+                    id: topic.id,
+                    title: topic.title,
+                    source: topic.source,
+                    time: topic.time,
+                    url: topic.link,
+                  });
+                }
+              }}
+              aria-label={`Read AI summary: ${topic.title}`}
               className={`
-                group relative flex flex-col justify-between rounded-2xl border-2 border-kct-border bg-kct-card p-6 md:p-7
-                transition-all duration-300
-                hover:border-foreground/15 hover:shadow-[4px_4px_0px_rgba(0,0,0,0.06)]
-                hover:translate-x-[-1px] hover:translate-y-[-1px] active:translate-x-0 active:translate-y-0
+                group relative flex flex-col justify-between rounded-2xl border border-kct-border bg-kct-card p-6 md:p-7 shadow-card cursor-pointer
+                transition-all duration-200
+                hover:border-kct-accent/30 hover:shadow-card-hover hover:-translate-y-0.5
                 ${i === 0 ? "md:col-span-2 md:row-span-1" : ""}
                 ${i === 5 ? "md:col-span-2 lg:col-span-1" : ""}
               `}
@@ -214,7 +237,7 @@ export default function TrendingNow() {
                 </div>
 
                 {/* Title */}
-                <h3 className={`font-extrabold leading-tight tracking-tight text-foreground group-hover:text-kct-accent transition-colors duration-200 ${
+                <h3 className={`font-bold leading-tight tracking-tight text-foreground group-hover:text-kct-accent transition-colors duration-200 ${
                   i === 0 ? "text-xl md:text-2xl" : "text-lg"
                 }`}>
                   {topic.title}
@@ -229,7 +252,7 @@ export default function TrendingNow() {
               {/* Action row */}
               <div className="mt-5 flex items-center justify-between pt-2 border-t border-kct-border/40">
                 <span className="inline-flex items-center gap-1.5 text-xs font-bold text-kct-accent group-hover:underline">
-                  Explain it with AI
+                  Summarize with AI
                   <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
                   </svg>
@@ -261,9 +284,18 @@ export default function TrendingNow() {
                   </span>
                 )}
               </div>
-            </Link>
+            </div>
           ))}
         </div>
+        )}
+
+        {/* News drawer */}
+        {selectedTopic && (
+          <NewsDrawer
+            key={selectedTopic.id}
+            topic={selectedTopic}
+            onClose={() => setSelectedTopic(null)}
+          />
         )}
 
         {/* Disclaimer */}

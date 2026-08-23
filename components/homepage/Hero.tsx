@@ -1,6 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import AankhijhyalPattern from "@/components/brand/AankhijhyalPattern";
+import NepalFlag from "@/components/brand/NepalFlag";
 
 const suggestions = [
   "PAN banaunu cha",
@@ -18,6 +20,7 @@ export default function Hero() {
 
   return (
     <section className="relative pt-32 pb-16 md:pt-40 md:pb-24 overflow-hidden">
+      <AankhijhyalPattern className="text-foreground" opacity={0.07} />
       <div className="mx-auto max-w-[1280px] px-5 md:px-8">
         <div className="grid md:grid-cols-[1fr_420px] gap-12 md:gap-16 items-center">
           {/* Left */}
@@ -178,7 +181,7 @@ export default function Hero() {
 
               {/* Card 4: National ID Badge */}
               <div className="absolute bottom-2 left-6 rounded-xl bg-foreground text-background shadow-card px-3.5 py-2.5 -rotate-2 flex items-center gap-2 text-xs font-medium animate-float-in stagger-6">
-                <span className="text-sm">🇳🇵</span>
+                <NepalFlag className="h-4 w-4" />
                 <span>NID Enrollment ready</span>
               </div>
             </div>

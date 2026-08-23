@@ -4,6 +4,8 @@ import type { SafetySetting } from "@/lib/ai/types";
 import { systemPrompt } from "@/lib/prompts";
 import { findTopic } from "@/lib/topics";
 
+export const maxDuration = 60;
+
 const MAX_MESSAGES = 50;
 
 const SAFETY_SETTINGS: SafetySetting[] = [

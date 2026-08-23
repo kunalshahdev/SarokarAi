@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Logo from "@/components/brand/Logo";
+import NepalFlag from "@/components/brand/NepalFlag";
 import MarkdownRenderer from "@/components/shared/MarkdownRenderer";
 import SavedDrawer from "@/components/shared/SavedDrawer";
 import { toast } from "@/components/shared/toast";
@@ -51,7 +52,7 @@ const placeholders = [
 ];
 
 const quickTopicPills = [
-  { label: "Passport", query: "Passport renew kasari garne?", icon: "🇳🇵" },
+  { label: "Passport", query: "Passport renew kasari garne?", icon: <NepalFlag className="h-3 w-3" /> },
   { label: "Driving Licence", query: "Driving licence ko next step k ho?", icon: "🚘" },
   { label: "PAN Card", query: "PAN card banauna k k chaincha?", icon: "📑" },
   { label: "National ID", query: "National ID card apply kasari garne?", icon: "🏛️" },

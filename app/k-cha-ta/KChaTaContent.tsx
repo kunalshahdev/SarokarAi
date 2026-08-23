@@ -9,7 +9,7 @@ import DailyDrop from "@/components/kchata/DailyDrop";
 import AskAnything from "@/components/kchata/AskAnything";
 import DebunkVerify from "@/components/kchata/DebunkVerify";
 import PersonalizedFeed from "@/components/kchata/PersonalizedFeed";
-import KChaTaFooter from "@/components/kchata/KChaTaFooter";
+import Footer from "@/components/layout/Footer";
 
 export default function KChaTaContent() {
   const router = useRouter();
@@ -24,7 +24,7 @@ export default function KChaTaContent() {
       <AskAnything />
       <DebunkVerify />
       <PersonalizedFeed />
-      <KChaTaFooter />
+      <Footer />
     </>
   );
 }

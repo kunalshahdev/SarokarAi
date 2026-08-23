@@ -6,6 +6,8 @@ import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import MarkdownRenderer from "@/components/shared/MarkdownRenderer";
 import SavedDrawer from "@/components/shared/SavedDrawer";
+import KChaTaEyes from "@/components/brand/KChaTaEyes";
+import NepalFlag from "@/components/brand/NepalFlag";
 import { toast } from "@/components/shared/toast";
 
 type Mode = "explain" | "chill" | "tldr" | "nepali" | "roman" | "deep";
@@ -14,7 +16,7 @@ const modes = [
   { id: "explain" as Mode, label: "Explain", icon: "\uD83E\uDDE0" },
   { id: "chill" as Mode, label: "Chill", icon: "\uD83D\uDE02" },
   { id: "tldr" as Mode, label: "TL;DR", icon: "\u26A1" },
-  { id: "nepali" as Mode, label: "Nepali", icon: "\uD83C\uDDF5\uD83C\uDDF3" },
+  { id: "nepali" as Mode, label: "Nepali", icon: <NepalFlag className="h-3 w-3" /> },
   { id: "roman" as Mode, label: "Roman Nepali", icon: "\u2328\uFE0F" },
   { id: "deep" as Mode, label: "Deep Dive", icon: "\uD83E\uDD0D" },
 ];
@@ -24,6 +26,67 @@ interface Message {
   content: string;
   mode?: Mode;
   error?: boolean;
+  sources?: GroundedSource[];
+}
+
+interface GroundedSource {
+  n: number;
+  title: string;
+  source: string;
+  url: string;
+  time: string;
+}
+
+function SourcesChip({ sources }: { sources: GroundedSource[] }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="px-1">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="inline-flex items-center gap-1.5 rounded-full border border-kct-border bg-kct-card px-2.5 py-1 text-[11px] font-bold text-kct-muted transition-all hover:border-kct-accent/40 hover:text-foreground"
+      >
+        <svg className="h-3 w-3 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        Grounded in {sources.length} live source{sources.length > 1 ? "s" : ""}
+        <svg
+          className={`h-3 w-3 transition-transform ${open ? "rotate-180" : ""}`}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+        </svg>
+      </button>
+      {open && (
+        <ol className="mt-2 space-y-1.5 rounded-xl border border-kct-border bg-kct-card p-3">
+          {sources.map((s) => (
+            <li key={s.n} className="text-xs leading-snug text-foreground">
+              <span className="font-bold text-kct-accent">[{s.n}]</span>{" "}
+              {s.url ? (
+                <a
+                  href={s.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline decoration-kct-border underline-offset-2 hover:decoration-kct-accent transition-colors"
+                >
+                  {s.title}
+                </a>
+              ) : (
+                s.title
+              )}
+              <span className="text-kct-muted-light">
+                {" "}
+                &middot; {s.source} &middot; {s.time}
+              </span>
+            </li>
+          ))}
+        </ol>
+      )}
+    </div>
+  );
 }
 
 const loadingMessages = [
@@ -47,6 +110,7 @@ function KChaTaChatContent() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("q") || undefined;
   const initialMode = (searchParams.get("mode") as Mode) || undefined;
+  const aboutArticleId = searchParams.get("about") || undefined;
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState(initialQuery || "");
@@ -128,6 +192,7 @@ function KChaTaChatContent() {
             content: m.content,
           })),
           mode,
+          articleId: aboutArticleId,
         }),
       });
 
@@ -149,6 +214,7 @@ function KChaTaChatContent() {
       const decoder = new TextDecoder();
       let buffer = "";
       let streamedText = "";
+      let pendingSources: GroundedSource[] | null = null;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -163,7 +229,9 @@ function KChaTaChatContent() {
             if (parsed.error) {
               throw new Error(parsed.error);
             }
-            if (parsed.text) {
+            if (Array.isArray(parsed.sources)) {
+              pendingSources = parsed.sources;
+            } else if (parsed.text) {
               streamedText += parsed.text;
               setMessages((prev) => {
                 if (prev.length === 0) return prev;
@@ -188,6 +256,14 @@ function KChaTaChatContent() {
           const updated = [...prev];
           const lastIdx = updated.length - 1;
           updated[lastIdx] = { role: "assistant", content: "Hmm, something went wrong. Try again?", mode, error: true };
+          return updated;
+        });
+      } else if (pendingSources && pendingSources.length > 0) {
+        setMessages((prev) => {
+          if (prev.length === 0) return prev;
+          const updated = [...prev];
+          const lastIdx = updated.length - 1;
+          updated[lastIdx] = { ...updated[lastIdx], sources: pendingSources! };
           return updated;
         });
       }
@@ -258,7 +334,7 @@ function KChaTaChatContent() {
   return (
     <div className="flex flex-col h-dvh bg-kct-surface">
       {/* Header */}
-      <header className="shrink-0 border-b-2 border-kct-border bg-kct-surface/80 backdrop-blur-xl supports-[backdrop-filter]:bg-kct-surface/60">
+      <header className="shrink-0 border-b border-kct-border bg-kct-surface/80 backdrop-blur-xl supports-[backdrop-filter]:bg-kct-surface/60">
         <div className="mx-auto flex h-14 max-w-3xl items-center justify-between px-4">
           <Link
             href="/k-cha-ta"
@@ -279,7 +355,7 @@ function KChaTaChatContent() {
             {messages.length > 0 && (
               <button
                 onClick={startNewChat}
-                className="flex items-center gap-1.5 rounded-lg border-2 border-kct-border bg-kct-card px-2.5 py-1 text-xs font-semibold text-kct-muted transition-all hover:border-foreground/20 hover:text-foreground active:scale-[0.97]"
+                className="flex items-center gap-1.5 rounded-lg border border-kct-border bg-kct-card px-2.5 py-1 text-xs font-semibold text-kct-muted transition-all hover:border-kct-accent/30 hover:text-foreground active:scale-[0.97]"
               >
                 <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -306,21 +382,26 @@ function KChaTaChatContent() {
         <div className="mx-auto max-w-3xl px-4 py-6">
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center min-h-[60vh] text-center animate-fade-up">
-              <div className="mb-4">
-                <span className="text-5xl">👀</span>
+              <div className="relative mb-6">
+                <div aria-hidden="true" className="absolute -inset-10 rounded-full bg-kct-accent/10 blur-2xl" />
+                <div aria-hidden="true" className="absolute -inset-5 rounded-full bg-orange-400/10 blur-xl" />
+                <KChaTaEyes className="relative h-20 w-20" />
               </div>
-              <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
                 K sodhne cha?
               </h2>
               <p className="mt-2 text-base text-kct-muted max-w-sm">
-                Trending ho, career ho, tech ho \u2014 kehi pani sodhna sakchau.
+                Trending ho, career ho, tech ho &mdash; kehi pani sodhna sakchau.
+              </p>
+              <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-kct-muted-light">
+                Nepal Internet Culture
               </p>
               <div className="mt-8 flex flex-wrap justify-center gap-2 max-w-md">
                 {suggestions.map((s, i) => (
                   <button
                     key={i}
                     onClick={() => sendMessage(s)}
-                    className={`rounded-xl border-2 border-kct-border bg-kct-card px-4 py-2.5 text-sm font-semibold text-foreground transition-all duration-200 hover:border-foreground/20 hover:shadow-[2px_2px_0px_rgba(0,0,0,0.04)] active:scale-[0.97] animate-fade-up stagger-${Math.min(i + 1, 8)}`}
+                    className={`rounded-xl border border-kct-border bg-kct-card px-4 py-2.5 text-sm font-semibold text-foreground shadow-card transition-all duration-200 hover:border-kct-accent/30 hover:shadow-card-hover hover:-translate-y-0.5 active:scale-[0.97] animate-fade-up stagger-${Math.min(i + 1, 8)}`}
                   >
                     {s}
                   </button>
@@ -344,20 +425,23 @@ function KChaTaChatContent() {
                 ) : (
                   <div className="flex justify-start gap-2.5 max-w-[90%]">
                     <div className="shrink-0 mt-0.5">
-                      <div className="h-8 w-8 rounded-lg bg-kct-accent/10 flex items-center justify-center">
-                        <span className="text-sm">👀</span>
+                      <div className="h-8 w-8 rounded-lg bg-kct-accent/10 ring-1 ring-kct-accent/20 flex items-center justify-center">
+                        <KChaTaEyes className="h-5 w-5" />
                       </div>
                     </div>
                     <div className="space-y-2 min-w-0">
-                      <div className="rounded-2xl rounded-tl-md bg-kct-card border-2 border-kct-border px-4 py-3 text-sm leading-relaxed">
+                      <div className="rounded-2xl rounded-tl-md bg-kct-card border border-kct-border shadow-card px-4 py-3 text-sm leading-relaxed">
                         <MarkdownRenderer content={msg.content} variant="kchata" />
                       </div>
+                      {i === messages.length - 1 && !isLoading && msg.sources && msg.sources.length > 0 && (
+                        <SourcesChip sources={msg.sources} />
+                      )}
                       {i === messages.length - 1 && !isLoading && (
                         <div className="mt-1">
                           {msg.error ? (
                             <button
                               onClick={retryLast}
-                              className="inline-flex items-center gap-1.5 rounded-lg border-2 border-kct-accent/40 bg-kct-accent-light px-3 py-1.5 text-xs font-bold text-kct-accent transition-all hover:border-kct-accent/70 active:scale-[0.97]"
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-kct-accent/40 bg-kct-accent-light px-3 py-1.5 text-xs font-semibold text-kct-accent transition-all hover:border-kct-accent/70 active:scale-[0.97]"
                             >
                               <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
@@ -438,11 +522,11 @@ function KChaTaChatContent() {
           {isLoading && (
             <div className="flex justify-start gap-2.5 animate-slide-in-left mt-5">
               <div className="shrink-0 mt-0.5">
-                <div className="h-8 w-8 rounded-lg bg-kct-accent/10 flex items-center justify-center">
-                  <span className="text-sm">👀</span>
+                <div className="h-8 w-8 rounded-lg bg-kct-accent/10 ring-1 ring-kct-accent/20 flex items-center justify-center">
+                  <KChaTaEyes className="h-5 w-5" />
                 </div>
               </div>
-              <div className="rounded-2xl rounded-tl-md bg-kct-card border-2 border-kct-border px-4 py-3">
+              <div className="rounded-2xl rounded-tl-md bg-kct-card border border-kct-border shadow-card px-4 py-3">
                 <div className="flex items-center gap-2.5">
                   <div className="flex gap-1">
                     <span className="h-2 w-2 rounded-full bg-kct-accent/40 animate-pulse-dot" style={{ animationDelay: "0ms" }} />
@@ -486,7 +570,7 @@ function KChaTaChatContent() {
       </div>
 
       {/* Input */}
-      <div className="shrink-0 border-t-2 border-kct-border bg-kct-surface/80 backdrop-blur-xl">
+      <div className="shrink-0 border-t border-kct-border bg-kct-surface/80 backdrop-blur-xl">
         <div className="mx-auto max-w-3xl px-4 py-3 sm:py-4">
           <form
             onSubmit={(e) => {
@@ -502,12 +586,12 @@ function KChaTaChatContent() {
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="K cha ta? Ke ko barema kura garne?"
                 disabled={isLoading}
-                className="h-12 sm:h-14 flex-1 rounded-xl border-2 border-kct-border bg-kct-card px-4 pr-28 text-sm sm:text-[15px] font-medium transition-all duration-200 focus:border-kct-accent focus:outline-none focus:ring-0 disabled:opacity-50 placeholder:text-kct-muted-light"
+                className="h-12 sm:h-14 flex-1 rounded-xl border border-kct-border bg-kct-card px-4 pr-28 text-sm sm:text-[15px] font-medium transition-all duration-200 focus:border-kct-accent focus:outline-none focus:ring-4 focus:ring-kct-accent/10 disabled:opacity-50 placeholder:text-kct-muted-light"
               />
               <button
                 type="submit"
                 disabled={isLoading || !input.trim()}
-                className="absolute right-2 rounded-lg bg-kct-accent px-3.5 sm:px-4 h-9 sm:h-10 text-sm font-bold text-white transition-all duration-200 hover:bg-kct-accent-hover disabled:opacity-30 active:scale-[0.95] flex items-center gap-1.5 shadow-[1px_1px_0px_rgba(0,0,0,0.1)]"
+                className="absolute right-2 rounded-lg bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 px-3.5 sm:px-4 h-9 sm:h-10 text-sm font-semibold text-white transition-all duration-200 hover:opacity-95 disabled:opacity-30 active:scale-[0.95] flex items-center gap-1.5 shadow-sm"
               >
                 <span className="hidden sm:inline">Sodh</span>
                 <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -532,8 +616,8 @@ export default function KChaTaChatPage() {
     <Suspense
       fallback={
         <div className="flex h-dvh flex-col items-center justify-center bg-kct-surface gap-3">
-          <div className="h-10 w-10 rounded-xl bg-kct-accent/10 flex items-center justify-center animate-pulse">
-            <span className="text-xl">👀</span>
+          <div className="h-12 w-12 rounded-xl bg-kct-accent/10 ring-1 ring-kct-accent/20 flex items-center justify-center animate-pulse">
+            <KChaTaEyes className="h-7 w-7" />
           </div>
           <div className="text-sm text-kct-muted font-semibold">Loading K Cha Ta?...</div>
         </div>

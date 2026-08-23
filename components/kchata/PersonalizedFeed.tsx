@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import NepalFlag from "@/components/brand/NepalFlag";
 
 const interests = [
   { id: "tech", label: "Tech", icon: "\uD83D\uDCBB" },
@@ -9,7 +10,7 @@ const interests = [
   { id: "music", label: "Music", icon: "\uD83C\uDFB5" },
   { id: "jobs", label: "Jobs", icon: "\uD83D\uDCBC" },
   { id: "study-abroad", label: "Study Abroad", icon: "\u2708\uFE0F" },
-  { id: "nepal", label: "Nepal", icon: "\uD83C\uDDF5\uD83C\uDDF3" },
+  { id: "nepal", label: "Nepal", icon: <NepalFlag className="h-4 w-4" /> },
   { id: "business", label: "Business", icon: "\uD83D\uDE80" },
   { id: "entertainment", label: "Entertainment", icon: "\uD83C\uDFAC" },
 ];
@@ -47,10 +48,10 @@ export default function PersonalizedFeed() {
       : "/k-cha-ta/chat";
 
   return (
-    <section className="py-16 md:py-24 bg-kct-surface border-t border-kct-border">
+    <section className="py-20 md:py-28 bg-kct-surface border-t border-kct-border">
       <div className="mx-auto max-w-[1280px] px-5 md:px-8 text-center">
-        <div className="max-w-lg mx-auto mb-10">
-          <h2 className="text-3xl sm:text-4xl md:text-[44px] font-extrabold tracking-tight leading-[1.1]">
+        <div className="max-w-lg mx-auto mb-12">
+          <h2 className="text-3xl sm:text-4xl md:text-[44px] font-bold tracking-tight leading-tight">
             Your feed
           </h2>
           <p className="mt-3 text-lg text-kct-muted">
@@ -59,15 +60,15 @@ export default function PersonalizedFeed() {
         </div>
 
         {/* Interest chips */}
-        <div className="flex flex-wrap justify-center gap-3 mb-10">
+        <div className="flex flex-wrap justify-center gap-3 mb-12">
           {interests.map((interest) => (
             <button
               key={interest.id}
               onClick={() => toggle(interest.id)}
-              className={`inline-flex items-center gap-2 rounded-xl border-2 px-5 py-3 text-sm font-semibold transition-all duration-200 ${
+              className={`inline-flex items-center gap-2 rounded-xl border px-5 py-3 text-sm font-semibold transition-all duration-200 ${
                 selected.includes(interest.id)
-                  ? "border-kct-accent bg-kct-accent text-white shadow-[2px_2px_0px_rgba(0,0,0,0.1)]"
-                  : "border-kct-border bg-kct-card text-kct-muted hover:border-foreground/20 hover:text-foreground hover:shadow-[2px_2px_0px_rgba(0,0,0,0.04)]"
+                  ? "border-kct-accent bg-kct-accent text-white shadow-sm"
+                  : "border-kct-border bg-kct-card text-kct-muted hover:border-kct-accent/30 hover:text-foreground"
               }`}
             >
               <span className="text-lg">{interest.icon}</span>
@@ -78,7 +79,7 @@ export default function PersonalizedFeed() {
 
         <Link
           href={exploreHref}
-          className="inline-flex items-center gap-2 rounded-xl bg-foreground px-8 py-4 text-base font-bold text-background transition-all hover:bg-foreground/90 active:scale-[0.98] shadow-[3px_3px_0px_rgba(0,0,0,0.08)]"
+          className="inline-flex items-center gap-2 rounded-xl bg-foreground px-8 py-4 text-base font-semibold text-background transition-all hover:bg-foreground/90 active:scale-[0.98] shadow-sm"
         >
           Start exploring
           <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">

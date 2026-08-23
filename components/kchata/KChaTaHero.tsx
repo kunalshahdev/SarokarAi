@@ -3,12 +3,13 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getTrending, type TrendingTopic } from "./trending-store";
+import NewsDrawer, { type DrawerTopic } from "./NewsDrawer";
 
 const heroChips = [
   { label: "🔥 What's Trending", query: "What is trending today in Nepal?" },
   { label: "💻 Tech & Gadgets", query: "What are the latest tech and gadget updates in Nepal?" },
   { label: "💼 Job & Lok Sewa", query: "What are the latest job vacancies and Lok Sewa updates?" },
-  { label: "🇳🇵 Policy & Politics", query: "Explain recent government policy and political news in Nepal" },
+  { label: "🏛️ Policy & Politics", query: "Explain recent government policy and political news in Nepal" },
   { label: "🎬 Viral & Culture", query: "What viral clips or internet culture trends are happening in Nepal?" },
   { label: "💰 Money & Economy", query: "What's happening in Nepal's market, banking, or economy?" },
   { label: "🏏 Sports & Cricket", query: "What's the latest in Nepali sports and cricket?" },
@@ -19,7 +20,7 @@ const inputPlaceholders = [
   'Try "K trend ma cha aile Nepal ma?"',
   'Try "Yo k ho sabai le post gardai chan?"',
   'Try "Is this rumor or fact?"',
-  'Try "Explain like I\'m from Nepal 🇳🇵"',
+  'Try "Explain like I\'m from Nepal"',
 ];
 
 export default function KChaTaHero() {
@@ -29,6 +30,7 @@ export default function KChaTaHero() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [trendTopics, setTrendTopics] = useState<TrendingTopic[]>([]);
   const [trendState, setTrendState] = useState<"loading" | "live" | "sample">("loading");
+  const [drawerTopic, setDrawerTopic] = useState<DrawerTopic | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -90,7 +92,7 @@ export default function KChaTaHero() {
             </div>
 
             {/* Main Headline */}
-            <h1 className="text-5xl sm:text-6xl lg:text-[76px] font-extrabold leading-[1.04] tracking-tight text-foreground">
+            <h1 className="text-4xl sm:text-5xl md:text-[64px] font-extrabold leading-[1.08] tracking-tight text-foreground">
               <span className="bg-gradient-to-r from-amber-600 via-orange-500 to-red-600 bg-clip-text text-transparent">
                 K Cha Ta?
               </span>
@@ -166,7 +168,7 @@ export default function KChaTaHero() {
                 <div className="flex items-center justify-between border-b border-kct-border pb-4">
                   <div className="flex items-center gap-2">
                     <span className={`flex h-2.5 w-2.5 rounded-full ${trendState === "loading" ? "bg-kct-muted animate-pulse" : trendState === "live" ? "bg-emerald-500 animate-pulse" : "bg-kct-muted"}`} />
-                    <span className="text-xs font-extrabold uppercase tracking-wider text-foreground">
+                    <span className="text-xs font-bold uppercase tracking-wider text-foreground">
                       🔥 Live Trend Radar
                     </span>
                   </div>
@@ -206,7 +208,15 @@ export default function KChaTaHero() {
                       <button
                         key={topic.id}
                         type="button"
-                        onClick={() => handleSubmit(topic.title)}
+                        onClick={() =>
+                          setDrawerTopic({
+                            id: topic.id,
+                            title: topic.title,
+                            source: topic.source,
+                            time: topic.time,
+                            url: topic.link,
+                          })
+                        }
                         className="w-full text-left cursor-pointer group p-3.5 rounded-2xl bg-kct-surface hover:bg-amber-500/10 transition-all duration-200 border border-kct-border/60"
                       >
                         <div className="flex items-center justify-between text-[11px] font-bold text-kct-muted mb-1">
@@ -239,7 +249,7 @@ export default function KChaTaHero() {
                 <span>👀</span>
                 <span>Nepal Internet Culture</span>
               </div>
-              <div aria-hidden="true" className="absolute -top-4 -left-6 rounded-xl bg-amber-500 text-white text-xs font-extrabold px-3.5 py-2 shadow-lg rotate-2 flex items-center gap-1.5">
+              <div aria-hidden="true" className="absolute -top-4 -left-6 rounded-xl bg-amber-500 text-white text-xs font-bold px-3.5 py-2 shadow-lg rotate-2 flex items-center gap-1.5">
                 <span>🔥</span>
                 <span>Real-Time Context</span>
               </div>
@@ -247,6 +257,14 @@ export default function KChaTaHero() {
           </div>
         </div>
       </div>
+
+      {drawerTopic && (
+        <NewsDrawer
+          key={drawerTopic.id}
+          topic={drawerTopic}
+          onClose={() => setDrawerTopic(null)}
+        />
+      )}
     </section>
   );
 }

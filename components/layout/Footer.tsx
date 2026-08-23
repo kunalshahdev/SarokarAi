@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Logo from "../brand/Logo";
+import NepalFlag from "@/components/brand/NepalFlag";
 import BackToTop from "./BackToTop";
 
 const footerLinks = {
@@ -43,7 +44,7 @@ export default function Footer() {
             {/* Made in Nepal */}
             <p className="mt-6 flex items-center gap-2 text-xs text-dark-muted">
               <span>Made in Kathmandu</span>
-              <span aria-hidden>🇳🇵</span>
+              <NepalFlag className="h-3.5 w-3.5" />
               <span>for Nepalis everywhere</span>
             </p>
           </div>

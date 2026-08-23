@@ -1,8 +1,10 @@
 "use client";
 
+import NepalFlag from "@/components/brand/NepalFlag";
+
 const categories = [
   { id: "trending", label: "Trending", icon: "🔥" },
-  { id: "nepal", label: "Nepal", icon: "🇳🇵" },
+  { id: "nepal", label: "Nepal", icon: <NepalFlag className="h-3.5 w-3.5" /> },
   { id: "student", label: "Student Life", icon: "🎓" },
   { id: "jobs", label: "Jobs & Career", icon: "💼" },
   { id: "tech", label: "Tech", icon: "💻" },

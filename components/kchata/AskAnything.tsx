@@ -17,12 +17,12 @@ export default function AskAnything() {
   const router = useRouter();
 
   return (
-    <section className="py-16 md:py-24 border-t border-kct-border">
+    <section className="py-20 md:py-28 border-t border-kct-border">
       <div className="mx-auto max-w-[1280px] px-5 md:px-8">
         <div className="md:grid md:grid-cols-[1fr_1.4fr] md:gap-16 items-start">
           {/* Left */}
           <div className="mb-10 md:mb-0 md:sticky md:top-28">
-            <h2 className="text-3xl sm:text-4xl md:text-[44px] font-extrabold tracking-tight leading-[1.1]">
+            <h2 className="text-3xl sm:text-4xl md:text-[44px] font-bold tracking-tight leading-tight">
               K sodhne?
             </h2>
             <p className="mt-3 text-lg text-kct-muted leading-relaxed">
@@ -40,7 +40,7 @@ export default function AskAnything() {
                     `/k-cha-ta/chat?q=${encodeURIComponent(prompt.text)}`
                   )
                 }
-                className="group text-left flex items-start gap-3 rounded-xl border-2 border-kct-border bg-kct-card p-4 md:p-5 transition-all duration-200 hover:border-foreground/15 hover:shadow-[3px_3px_0px_rgba(0,0,0,0.04)] hover:translate-x-[-1px] hover:translate-y-[-1px]"
+                className="group text-left flex items-start gap-3 rounded-xl border border-kct-border bg-kct-card p-4 md:p-5 shadow-card transition-all duration-200 hover:border-kct-accent/30 hover:shadow-card-hover hover:-translate-y-0.5"
               >
                 <span className="text-xl mt-0.5 shrink-0">{prompt.icon}</span>
                 <div className="flex-1">

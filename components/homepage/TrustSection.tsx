@@ -1,4 +1,5 @@
 import ScrollReveal from "@/components/shared/ScrollReveal";
+import HimalayaRidge from "@/components/brand/HimalayaRidge";
 
 function lastCheckedLabel() {
   return new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(new Date());
@@ -6,8 +7,9 @@ function lastCheckedLabel() {
 
 export default function TrustSection() {
   return (
-    <section className="py-20 md:py-28 bg-dark text-white">
-      <div className="mx-auto max-w-[1280px] px-5 md:px-8">
+    <section className="relative overflow-hidden py-20 md:py-28 bg-dark text-white">
+      <HimalayaRidge className="h-20 md:h-28 text-white" />
+      <div className="relative mx-auto max-w-[1280px] px-5 md:px-8">
         <div className="md:grid md:grid-cols-2 md:gap-16 items-center">
           <ScrollReveal>
             <h2 className="text-3xl sm:text-4xl md:text-[44px] font-bold tracking-tight leading-tight">

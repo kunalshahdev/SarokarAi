@@ -18,6 +18,7 @@ const notoDevanagari = Noto_Sans_Devanagari({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://sarokar.app"),
   title: "Sarokar — Nepal ko kaam, aba sajilo.",
   description:
     "Government processes, documents, and everyday questions — figure out what you need, where to go, and what comes next.",
@@ -52,7 +53,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#F7F5F0",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#F7F5F0" },
+    { media: "(prefers-color-scheme: dark)", color: "#0A0A0A" },
+  ],
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,

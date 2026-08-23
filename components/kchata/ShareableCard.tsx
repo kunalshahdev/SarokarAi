@@ -7,7 +7,7 @@ interface ShareableCardProps {
 
 export default function ShareableCard({ title, summary }: ShareableCardProps) {
   return (
-    <div className="rounded-2xl border-2 border-kct-border bg-kct-card overflow-hidden max-w-md">
+    <div className="rounded-2xl border border-kct-border bg-kct-card shadow-card overflow-hidden max-w-md">
       {/* Header stripe */}
       <div className="bg-foreground px-6 py-3">
         <div className="flex items-center justify-between">
@@ -22,7 +22,7 @@ export default function ShareableCard({ title, summary }: ShareableCardProps) {
 
       {/* Content */}
       <div className="px-6 py-5">
-        <h3 className="text-lg font-extrabold text-foreground leading-snug tracking-tight">
+        <h3 className="text-lg font-bold text-foreground leading-snug tracking-tight">
           {title}
         </h3>
         <p className="mt-3 text-sm text-kct-muted leading-relaxed">

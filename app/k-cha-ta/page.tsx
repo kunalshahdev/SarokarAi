@@ -9,7 +9,7 @@ export const metadata = {
 
 export default function KChaTaPage() {
   return (
-    <div id="main-content" className="min-h-screen bg-kct-surface text-foreground">
+    <div id="main-content" className="kct-theme min-h-screen bg-kct-surface text-foreground">
       <Navbar />
       <KChaTaContent />
     </div>
