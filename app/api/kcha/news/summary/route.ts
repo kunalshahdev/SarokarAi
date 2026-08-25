@@ -2,18 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { chatWithFallback } from "@/lib/ai/provider";
 import { resolveArticle, timeAgoLabel } from "@/lib/kcha/news-index";
 import { fetchArticleText, isAllowedArticleUrl } from "@/lib/kcha/article-fetch";
+import { extractJson, type ArticleSummary } from "@/lib/kcha/summary-json";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 
 export const maxDuration = 60;
 
 const SUMMARY_TTL_MS = 60 * 60 * 1000;
 const MAX_TEXT_FOR_PROMPT = 6000;
-
-interface ArticleSummary {
-  tldr: string;
-  keyPoints: string[];
-  whyItMatters: string;
-}
 
 interface CacheEntry {
   summary: ArticleSummary;
@@ -43,32 +38,6 @@ RULES:
 - Output ONLY the JSON object. No markdown fences, no commentary.
 - Use the article's facts only. Never invent names, numbers, or quotes.
 - If the article body is too short or is just a headline, keep keyPoints to 2 and honestly say k thaha bhaisakeko chhaina (what is not yet known).`;
-
-function extractJson(raw: string): ArticleSummary | null {
-  const cleaned = raw.replace(/```json|```/g, "").trim();
-  const start = cleaned.indexOf("{");
-  const end = cleaned.lastIndexOf("}");
-  if (start === -1 || end <= start) return null;
-  try {
-    const parsed = JSON.parse(cleaned.slice(start, end + 1));
-    if (
-      typeof parsed.tldr !== "string" ||
-      !Array.isArray(parsed.keyPoints)
-    ) {
-      return null;
-    }
-    return {
-      tldr: parsed.tldr,
-      keyPoints: parsed.keyPoints
-        .filter((p: unknown): p is string => typeof p === "string")
-        .slice(0, 5),
-      whyItMatters:
-        typeof parsed.whyItMatters === "string" ? parsed.whyItMatters : "",
-    };
-  } catch {
-    return null;
-  }
-}
 
 async function generateSummary(
   title: string,
