@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { handleChatRequest } from "@/lib/ai/handler";
 import type { SafetySetting } from "@/lib/ai/types";
 import {
-  getArticleById,
+  resolveArticle,
   searchArticles,
   formatNewsContext,
   timeAgoLabel,
@@ -24,18 +24,51 @@ const SAFETY_SETTINGS: SafetySetting[] = [
 
 const modeInstructions: Record<string, string> = {
   explain:
-    "Explain clearly and informatively. Be helpful and thorough.",
+    `Explain clearly and informatively. Structure your response with a brief intro, then clear points or steps. Be thorough but not padded. Use simple language a 20-year-old Nepali would understand. Mix English and Roman Nepali naturally where it helps clarity.`,
+
   chill:
-    "Be casual and relaxed. Use natural Roman Nepali or casual English. Keep it light but accurate.",
+    `Be super casual and relaxed — like texting a smart Nepali friend. Use natural Roman Nepali mixed with English. Use phrases like "bro", "yaar", "k cha", "suno", "basically", "tbh", "ngl", "legit". Keep sentences short. Use emojis sparingly but naturally (don't overdo it). Never sound corporate or formal. Never say "Hello!" or "Great question!". Just dive in. Example tone: "k cha bro, basically yo kura yo ho — [explanation]. suno, important part chai..."`,
+
   tldr:
-    "Give an extremely short summary. Maximum 3-4 sentences. No fluff.",
+    `Give an ultra-short summary. STRICT FORMAT:
+**K bhayo:** [1 sentence — the core event/fact]
+**Kina important:** [1 sentence — why people care]
+**Timi lai k thahaa hunuparchha:** [1 sentence — what you should know]
+Nothing else. No intro. No outro. No "In conclusion". Hard limit: 4 sentences total across all three points. If you cannot fit it in 4 sentences, cut mercilessly.`,
+
   nepali:
-    "Respond entirely in Nepali (Devanagari script). Keep it simple and clear.",
+    `सम्पूर्ण जवाफ नेपाली (देवनागरी) मा दिनुहोस्। सरल र स्पष्ट भाषा प्रयोग गर्नुहोस् — सरकारी वा अत्यधिक औपचारिक शब्दहरू नगर्नुहोस्। २०-२५ वर्षका नेपाली युवाले सजिलै बुझ्ने भाषा प्रयोग गर्नुहोस्। तथ्यहरू स्पष्ट र बुलेट पोइन्टमा राख्नुहोस्।`,
+
   roman:
-    "Respond in Roman Nepali. Write exactly how a Nepali person would text. Be casual and natural.",
+    `Respond ONLY in Roman Nepali — exactly how a Nepali person would type on WhatsApp or Instagram. Rules:
+- Write phonetically: "kasto cha" not "kasto chha", "bhayo" not "vayo" (both fine actually), "kasari" "kina" "ke" etc.
+- Mix some English words naturally as Nepalis do: "basically", "actually", "btw", "ngl", "tbh"
+- Keep it conversational and warm
+- Don't use Devanagari at all
+- Don't be overly formal
+- Example: "yo kura basically yesto ho bro — [explanation]. ani important kura chai, [point]. kasari garne bhane [steps]."`,
+
   deep:
-    "Give a comprehensive deep dive. Include background, context, implications, and related topics. Be thorough.",
+    `Give a comprehensive, well-structured deep dive. Use markdown headers to organize. Structure:
+## Background (Yo K Ho?)
+[Context and history]
+## K Bhayo? (What Happened)
+[Current situation / facts]
+## Kina Important Cha? (Why It Matters)
+[Implications and significance]
+## Nepali Context
+[How this specifically affects Nepal or Nepalis]
+## Thaha Raakhnu Parne Kura (Key Takeaways)
+[3-5 bullet points]
+Be thorough. Include nuance. Cite sources with [n] notation where applicable.`,
 };
+
+const EMPTY_CONTEXT_GUARD = `\n\nHALLUCINATION GUARD (STRICT):
+If the LIVE NEWS CONTEXT section is empty or absent, you MUST:
+1. Say clearly: "Yo topic ko bare ma ahile live news context bhetena." before answering.
+2. Only then provide background knowledge, clearly labeled as: "(Background knowledge — verify with current sources)"
+3. NEVER present background knowledge as current/breaking news.
+4. NEVER invent trending topics, viral posts, engagement numbers, or quote specific people unless from context.`;
 
 const kChaTaSystemPrompt = `You are K Cha Ta? — a playful, curious, and knowledgeable assistant built into Sarokar.
 
@@ -107,19 +140,28 @@ interface Grounding {
   sources: GroundedSource[];
 }
 
+interface FocusRef {
+  id?: string;
+  url?: string;
+  title?: string;
+}
+
 async function buildGrounding(
   query: string,
-  articleId?: string
+  focus?: FocusRef
 ): Promise<Grounding> {
   const sources: GroundedSource[] = [];
   const sections: string[] = [];
   let focusArticle: NewsArticle | null = null;
+  let focusUrl: string | undefined;
 
-  if (articleId) {
+  if (focus && (focus.id || focus.url || focus.title)) {
     try {
-      focusArticle = await getArticleById(articleId);
+      focusArticle = await resolveArticle({ id: focus.id, url: focus.url });
     } catch {}
+
     if (focusArticle) {
+      focusUrl = focusArticle.url;
       sources.push({
         n: 1,
         title: sanitizeForPrompt(focusArticle.title),
@@ -129,14 +171,34 @@ async function buildGrounding(
       });
       sections.push(
         `[FOCUS ARTICLE — the user is asking about this story]\n` +
-          formatNewsContext([focusArticle]).replace(/^\[1\]/, "[1]")
+          formatNewsContext([focusArticle])
+      );
+    } else if (focus.title || focus.url) {
+      // Not in the index cache — still anchor the conversation to the story's
+      // identity so follow-ups stay on-topic, even without full body text.
+      focusUrl = focus.url;
+      const stubTitle = sanitizeForPrompt(focus.title || focus.url || "");
+      sources.push({
+        n: 1,
+        title: stubTitle,
+        source: "",
+        url: focus.url || "",
+        time: "",
+      });
+      sections.push(
+        `[FOCUS ARTICLE — the user is asking about this story]\n` +
+          `[1] ${stubTitle}` +
+          (focus.url ? `\nURL: ${focus.url}` : "") +
+          `\n(Full article text not available — rely on retrieved context below and be honest about what is not yet confirmed.)`
       );
     }
   }
 
   try {
     const hits = await searchArticles(query, RETRIEVAL_LIMIT);
-    const relevant = hits.filter((h) => h.id !== focusArticle?.id);
+    const relevant = hits.filter(
+      (h) => h.id !== focusArticle?.id && (!focusUrl || h.url !== focusUrl)
+    );
     const room = MAX_CONTEXT_CHARS - sections.join("\n\n").length;
     if (relevant.length > 0 && room > 400) {
       const nextNumber = sources.length + 1;
@@ -196,10 +258,22 @@ export async function POST(request: NextRequest) {
         typeof body.articleId === "string" && body.articleId.length < 200
           ? body.articleId
           : undefined;
+      const aboutUrl =
+        typeof body.aboutUrl === "string" && body.aboutUrl.length <= 500
+          ? body.aboutUrl
+          : undefined;
+      const aboutTitle =
+        typeof body.aboutTitle === "string" && body.aboutTitle.length <= 300
+          ? body.aboutTitle
+          : undefined;
 
       let grounding: Grounding = { contextBlock: "", sources: [] };
       try {
-        grounding = await buildGrounding(lastUserMessage, articleId);
+        grounding = await buildGrounding(lastUserMessage, {
+          id: articleId,
+          url: aboutUrl,
+          title: aboutTitle,
+        });
       } catch (e) {
         console.warn("[kcha] grounding retrieval failed", e);
       }
@@ -209,6 +283,7 @@ export async function POST(request: NextRequest) {
         ` Always prioritize recent information and current ${currentYear} events.\n\n` +
         `CURRENT MODE INSTRUCTION:\n${modeInstruction}` +
         grounding.contextBlock +
+        EMPTY_CONTEXT_GUARD +
         `\n\nLANGUAGE POLICY:\nUsers may communicate in Roman Nepali, Nepali Devanagari, English, or mixed Nepali-English.\nUnderstand informal Roman Nepali spelling and variations naturally.\nMatch the user's language naturally in every response.`;
 
       return {

@@ -18,9 +18,9 @@ interface SummaryResponse {
 }
 
 const loadingHints = [
-  "Reading the full article\u2026",
-  "Separating facts from noise\u2026",
-  "Summarizing for you\u2026",
+  "Pura article padhdai chu\u2026",
+  "Facts ra noise chhutyaudai\u2026",
+  "Summary banaudai chu\u2026",
 ];
 
 export default function NewsDrawer({
@@ -43,7 +43,7 @@ export default function NewsDrawer({
     fetch("/api/kcha/news/summary", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: topic.id }),
+      body: JSON.stringify({ id: topic.id, url: topic.url, title: topic.title }),
     })
       .then(async (res) => {
         if (!res.ok) throw new Error(String(res.status));
@@ -67,6 +67,7 @@ export default function NewsDrawer({
   }, [topic]);
 
   useEffect(() => {
+    if (!loading) return;
     const interval = setInterval(
       () => setHintIdx((i) => (i + 1) % loadingHints.length),
       1800
@@ -88,9 +89,11 @@ export default function NewsDrawer({
 
   const askMore = (question?: string) => {
     const q = (question || followUp).trim() || `Explain this story: ${topic.title}`;
-    router.push(
-      `/k-cha-ta/chat?q=${encodeURIComponent(q)}&about=${encodeURIComponent(topic.id)}`
-    );
+    const params = new URLSearchParams({ q });
+    if (topic.url) params.set("aboutUrl", topic.url);
+    if (topic.title) params.set("aboutTitle", topic.title);
+    if (topic.id) params.set("about", topic.id);
+    router.push(`/k-cha-ta/chat?${params.toString()}`);
   };
 
   return (
@@ -155,7 +158,7 @@ export default function NewsDrawer({
                 onClick={() => askMore(`Explain this story: ${topic.title}`)}
                 className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 px-4 py-2 text-xs font-bold text-white hover:opacity-95 active:scale-[0.97]"
               >
-                Ask AI directly
+                AI sanga direct sodha
                 <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
                 </svg>
@@ -167,7 +170,7 @@ export default function NewsDrawer({
             <>
               <section aria-label="Summary">
                 <h4 className="text-[11px] font-bold uppercase tracking-wider text-kct-accent mb-2">
-                  Quick summary
+                  K bhayo?
                 </h4>
                 <p className="text-sm font-medium leading-relaxed text-foreground">
                   {summary.tldr}
@@ -177,7 +180,7 @@ export default function NewsDrawer({
               {summary.keyPoints.length > 0 && (
                 <section aria-label="Key points">
                   <h4 className="text-[11px] font-bold uppercase tracking-wider text-kct-accent mb-2">
-                    Key points
+                    Main kura haru
                   </h4>
                   <ul className="space-y-2">
                     {summary.keyPoints.map((point, i) => (
@@ -196,7 +199,7 @@ export default function NewsDrawer({
                   className="rounded-xl border border-kct-accent/20 bg-kct-accent-light p-4"
                 >
                   <h4 className="text-[11px] font-bold uppercase tracking-wider text-kct-accent mb-1.5">
-                    Why it matters
+                    Kina important?
                   </h4>
                   <p className="text-sm leading-relaxed text-foreground">
                     {summary.whyItMatters}
@@ -216,7 +219,7 @@ export default function NewsDrawer({
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-kct-muted hover:text-foreground transition-colors"
             >
-              Read original at {topic.source || "source"}
+              {topic.source || "source"} ma original padha
               <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
               </svg>
@@ -232,7 +235,7 @@ export default function NewsDrawer({
             <input
               value={followUp}
               onChange={(e) => setFollowUp(e.target.value)}
-              placeholder="Ask more about this story…"
+              placeholder="Yo story barema aru sodha…"
               className="h-11 w-full rounded-xl border border-kct-border bg-kct-card pl-4 pr-14 text-sm text-foreground placeholder:text-kct-muted-light focus:border-kct-accent focus:outline-none focus:ring-4 focus:ring-kct-accent/10 transition-all"
             />
             <button
@@ -246,7 +249,7 @@ export default function NewsDrawer({
             </button>
           </form>
           <p className="text-[10px] text-kct-muted-light text-center">
-            Chat continues with this story as context
+            Yehi story ko context sanga chat continue huncha
           </p>
         </div>
       </aside>

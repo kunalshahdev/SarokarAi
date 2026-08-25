@@ -195,6 +195,31 @@ export async function getArticleById(id: string): Promise<NewsArticle | null> {
   return articles.find((a) => a.id === id) ?? null;
 }
 
+export async function getArticleByUrl(url: string): Promise<NewsArticle | null> {
+  if (!url) return null;
+  const articles = await getNewsArticles();
+  return articles.find((a) => a.url === url) ?? null;
+}
+
+// Resolve an article from either the (cache-specific) id or its stable URL.
+// URL is the reliable cross-cache identity, since the trending and news-index
+// caches key ids differently; id is tried first as a fast path.
+export async function resolveArticle(ref: {
+  id?: string;
+  url?: string;
+}): Promise<NewsArticle | null> {
+  const articles = await getNewsArticles();
+  if (ref.id) {
+    const byId = articles.find((a) => a.id === ref.id);
+    if (byId) return byId;
+  }
+  if (ref.url) {
+    const byUrl = articles.find((a) => a.url === ref.url);
+    if (byUrl) return byUrl;
+  }
+  return null;
+}
+
 export function searchArticlesSync(
   articles: NewsArticle[],
   query: string,
