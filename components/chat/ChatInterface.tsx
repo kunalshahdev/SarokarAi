@@ -91,6 +91,7 @@ export default function ChatInterface({ initialQuery }: { initialQuery?: string 
   const [messages, setMessages] = useState<Message[]>(loadMessages);
   const [input, setInput] = useState(initialQuery || "");
   const [isLoading, setIsLoading] = useState(false);
+  const [initialQueryLoading, setInitialQueryLoading] = useState(() => !!initialQuery && loadMessages().length === 0);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const [showWelcome, setShowWelcome] = useState(() => loadMessages().length === 0);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -114,13 +115,21 @@ export default function ChatInterface({ initialQuery }: { initialQuery?: string 
     }
   }, [messages]);
 
-  const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const scrollToBottom = useCallback((instant = false) => {
+    messagesEndRef.current?.scrollIntoView({ behavior: instant ? "instant" : "smooth" });
   }, []);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages, isLoading, scrollToBottom]);
+
+  // On initial mount: if there are persisted messages, scroll to bottom instantly
+  useEffect(() => {
+    if (messages.length > 0) {
+      scrollToBottom(true);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Rotate placeholder
   useEffect(() => {
@@ -287,6 +296,7 @@ export default function ChatInterface({ initialQuery }: { initialQuery?: string 
     if (initialQuery && !hasAutoSent.current) {
       hasAutoSent.current = true;
       const timer = setTimeout(() => {
+        setInitialQueryLoading(false);
         sendMessage(initialQuery);
       }, 300);
       return () => clearTimeout(timer);
@@ -349,6 +359,29 @@ export default function ChatInterface({ initialQuery }: { initialQuery?: string 
 
   return (
     <div className="flex flex-col h-full bg-chat-bg">
+      {/* Initial query shimmer overlay */}
+      {initialQueryLoading && (
+        <div className="absolute inset-0 z-10 flex flex-col bg-chat-bg">
+          <div className="shrink-0 border-b border-border h-14 flex items-center px-4">
+            <div className="h-4 w-20 rounded bg-border animate-shimmer" />
+          </div>
+          <div className="flex-1 flex flex-col items-center justify-center px-4 gap-4">
+            <div className="h-16 w-16 rounded-2xl bg-accent/10 animate-pulse" />
+            <div className="h-5 w-48 rounded bg-border animate-shimmer" />
+            <div className="h-4 w-64 rounded bg-border/60 animate-shimmer" />
+            <div className="mt-2 flex flex-col gap-2 w-full max-w-xl">
+              <div className="h-14 rounded-2xl bg-card border border-border shadow-card overflow-hidden relative">
+                <div className="absolute inset-0 animate-shimmer" style={{ background: "linear-gradient(90deg, transparent 25%, var(--color-border) 50%, transparent 75%)", backgroundSize: "200% 100%" }} />
+              </div>
+              {[80, 64, 72].map((w, i) => (
+                <div key={i} className="h-12 rounded-2xl bg-chat-assistant border border-chat-assistant-border overflow-hidden relative" style={{ maxWidth: `${w}%` }}>
+                  <div className="absolute inset-0 animate-shimmer" style={{ background: "linear-gradient(90deg, transparent 25%, var(--color-border) 50%, transparent 75%)", backgroundSize: "200% 100%", animationDelay: `${i * 150}ms` }} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <header className="shrink-0 border-b border-border bg-chat-header-bg/80 backdrop-blur-xl supports-[backdrop-filter]:bg-chat-header-bg/60">
         <div className="mx-auto flex h-14 max-w-3xl items-center justify-between px-4">
