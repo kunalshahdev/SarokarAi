@@ -77,6 +77,7 @@ function MarkdownRenderer({ content, variant = "sarokar" }: MarkdownRendererProp
   const lines = content.split("\n");
   const elements: React.ReactNode[] = [];
   let i = 0;
+  let elKey = 0; // dedicated monotonic key — never duplicates
 
   while (i < lines.length) {
     const line = lines[i];
@@ -90,7 +91,7 @@ function MarkdownRenderer({ content, variant = "sarokar" }: MarkdownRendererProp
       }
       elements.push(
         <pre
-          key={i}
+          key={elKey++}
           className={`my-2 overflow-x-auto rounded-lg p-3 text-xs font-mono leading-relaxed ${
             isKct ? "bg-kct-surface" : "bg-surface"
           }`}
@@ -109,7 +110,7 @@ function MarkdownRenderer({ content, variant = "sarokar" }: MarkdownRendererProp
         i++;
       }
       elements.push(
-        <ul key={i} className="my-1.5 space-y-1 pl-4">
+        <ul key={elKey++} className="my-1.5 space-y-1 pl-4">
           {items.map((item, idx) => (
             <li key={idx} className="flex gap-2">
               <span
@@ -132,7 +133,7 @@ function MarkdownRenderer({ content, variant = "sarokar" }: MarkdownRendererProp
         i++;
       }
       elements.push(
-        <ol key={i} className="my-1.5 space-y-1 pl-4 list-none">
+        <ol key={elKey++} className="my-1.5 space-y-1 pl-4 list-none">
           {items.map((item, idx) => (
             <li key={idx} className="flex gap-2">
               <span
@@ -158,7 +159,7 @@ function MarkdownRenderer({ content, variant = "sarokar" }: MarkdownRendererProp
           ? "text-base font-bold mt-2 mb-1"
           : "text-sm font-semibold mt-1.5 mb-0.5";
       elements.push(
-        <p key={i} className={cls}>
+        <p key={elKey++} className={cls}>
           {renderInline(text)}
         </p>
       );
@@ -168,20 +169,20 @@ function MarkdownRenderer({ content, variant = "sarokar" }: MarkdownRendererProp
 
     if (/^---+$/.test(line.trim())) {
       elements.push(
-        <hr key={i} className={`my-2 ${isKct ? "border-kct-border" : "border-border"}`} />
+        <hr key={elKey++} className={`my-2 ${isKct ? "border-kct-border" : "border-border"}`} />
       );
       i++;
       continue;
     }
 
     if (line.trim() === "") {
-      elements.push(<div key={i} className="h-1.5" />);
+      elements.push(<div key={elKey++} className="h-1.5" />);
       i++;
       continue;
     }
 
     elements.push(
-      <p key={i} className="leading-relaxed">
+      <p key={elKey++} className="leading-relaxed">
         {renderInline(line)}
       </p>
     );

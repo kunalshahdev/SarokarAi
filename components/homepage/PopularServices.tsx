@@ -53,6 +53,15 @@ export default function PopularServices() {
               The things people ask about most.
             </p>
           </div>
+          <Link
+            href="/chat"
+            className="hidden sm:inline-flex items-center gap-1.5 text-sm font-medium text-accent hover:text-accent-hover transition-colors group shrink-0 mb-1"
+          >
+            View all services
+            <svg className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+            </svg>
+          </Link>
         </ScrollReveal>
 
         <ScrollReveal delay={1} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

@@ -6,13 +6,16 @@ const categories = [
     id: "government",
     title: "Government",
     description: "Citizenship, national ID, passport and more.",
+    badge: "15+ services",
     icon: (
       <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z" />
       </svg>
     ),
-    span: "md:col-span-2 md:row-span-2",
-    bg: "bg-card",
+    span: "sm:col-span-2 md:col-span-2 md:row-span-2",
+    cardStyle: "bg-gradient-to-br from-[#1B2D5E]/8 to-[#1B2D5E]/3 border-[#1B2D5E]/15",
+    iconColor: "text-[#1B2D5E]",
+    accentColor: "text-[#1B2D5E]",
     link: "/chat?q=citizenship+nikalnu+cha",
   },
   {
@@ -25,7 +28,9 @@ const categories = [
       </svg>
     ),
     span: "md:col-span-1 md:row-span-1",
-    bg: "bg-card",
+    cardStyle: "bg-gradient-to-br from-blue-50/80 to-blue-50/30 border-blue-100 dark:from-blue-950/20 dark:to-blue-950/10 dark:border-blue-900/20",
+    iconColor: "text-blue-600 dark:text-blue-400",
+    accentColor: "text-blue-600 dark:text-blue-400",
     link: "/chat?q=PAN+banaunu+cha",
   },
   {
@@ -38,7 +43,9 @@ const categories = [
       </svg>
     ),
     span: "md:col-span-1 md:row-span-1",
-    bg: "bg-card",
+    cardStyle: "bg-gradient-to-br from-emerald-50/80 to-emerald-50/30 border-emerald-100 dark:from-emerald-950/20 dark:to-emerald-950/10 dark:border-emerald-900/20",
+    iconColor: "text-emerald-600 dark:text-emerald-400",
+    accentColor: "text-emerald-600 dark:text-emerald-400",
     link: "/chat?q=driving+licence+ko+next+step",
   },
   {
@@ -51,7 +58,9 @@ const categories = [
       </svg>
     ),
     span: "md:col-span-1 md:row-span-1",
-    bg: "bg-card",
+    cardStyle: "bg-gradient-to-br from-amber-50/80 to-amber-50/30 border-amber-100 dark:from-amber-950/20 dark:to-amber-950/10 dark:border-amber-900/20",
+    iconColor: "text-amber-600 dark:text-amber-400",
+    accentColor: "text-amber-600 dark:text-amber-400",
     link: "/chat?q=company+register+garna+kati+lagcha",
   },
   {
@@ -64,7 +73,9 @@ const categories = [
       </svg>
     ),
     span: "md:col-span-1 md:row-span-1",
-    bg: "bg-card",
+    cardStyle: "bg-gradient-to-br from-purple-50/80 to-purple-50/30 border-purple-100 dark:from-purple-950/20 dark:to-purple-950/10 dark:border-purple-900/20",
+    iconColor: "text-purple-600 dark:text-purple-400",
+    accentColor: "text-purple-600 dark:text-purple-400",
     link: "/chat?q=TU+transcript+kasari+nikalne",
   },
 ];
@@ -87,16 +98,23 @@ export default function CategoryGrid() {
             <Link
               key={cat.id}
               href={cat.link}
-              className={`group ${cat.span} ${cat.bg} rounded-2xl border border-border p-6 md:p-8 shadow-card transition-all duration-200 hover:border-accent/20 hover:shadow-card-hover hover:-translate-y-0.5`}
+              className={`group ${cat.span} ${cat.cardStyle} rounded-2xl border p-6 md:p-8 shadow-card transition-all duration-200 hover:shadow-card-hover hover:-translate-y-0.5`}
             >
-              <div className="text-muted transition-colors group-hover:text-accent duration-200">
-                {cat.icon}
+              <div className="flex items-start justify-between">
+                <div className={`${cat.iconColor} transition-colors duration-200`}>
+                  {cat.icon}
+                </div>
+                {cat.badge && (
+                  <span className="text-[10px] font-bold text-[#1B2D5E] bg-[#1B2D5E]/10 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                    {cat.badge}
+                  </span>
+                )}
               </div>
               <h3 className="mt-4 text-lg font-semibold">{cat.title}</h3>
               <p className="mt-1.5 text-sm text-muted leading-relaxed">
                 {cat.description}
               </p>
-              <div className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-accent opacity-60 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0.5">
+              <div className={`mt-4 inline-flex items-center gap-1 text-sm font-medium ${cat.accentColor} opacity-60 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0.5`}>
                 Explore
                 <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />

@@ -2,12 +2,15 @@
 
 import { useState, useEffect, useSyncExternalStore, useCallback } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import Logo from "../brand/Logo";
 import NepalFlag from "@/components/brand/NepalFlag";
 
+const DISMISS_KEY = "dismissed-announcement";
+
 const navLinks = [
   { label: "Services", href: "/#services" },
-  { label: "K Cha Ta?", href: "/k-cha-ta" },
+  { label: "K Cha Ta?", href: "/k-cha-ta", kct: true },
   { label: "How it works", href: "/#how-it-works" },
   { label: "Explore", href: "/#explore" },
 ];
@@ -28,10 +31,46 @@ function getThemeServerSnapshot() {
   return false;
 }
 
+function subscribeAnnouncement(callback: () => void) {
+  window.addEventListener("storage", callback);
+  return () => window.removeEventListener("storage", callback);
+}
+
+function getAnnouncementSnapshot() {
+  if (typeof window === "undefined") return false;
+  return localStorage.getItem(DISMISS_KEY) === "1";
+}
+
+function getAnnouncementServerSnapshot() {
+  return false;
+}
+
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [announcementAnimating, setAnnouncementAnimating] = useState(false);
   const dark = useSyncExternalStore(subscribeTheme, getThemeSnapshot, getThemeServerSnapshot);
+  const announcementDismissed = useSyncExternalStore(
+    subscribeAnnouncement,
+    getAnnouncementSnapshot,
+    getAnnouncementServerSnapshot
+  );
+  const pathname = usePathname();
+
+  const isKctPage = pathname.startsWith("/k-cha-ta");
+
+  const dismissAnnouncement = () => {
+    setAnnouncementAnimating(true);
+    setTimeout(() => {
+      localStorage.setItem(DISMISS_KEY, "1");
+      window.dispatchEvent(new Event("storage"));
+    }, 350);
+  };
+
+  const isActive = (href: string) => {
+    if (href.startsWith("/#")) return pathname === "/";
+    return pathname === href || pathname.startsWith(href + "/");
+  };
 
   const toggleTheme = useCallback(() => {
     const next = !getThemeSnapshot();
@@ -64,44 +103,85 @@ export default function Navbar() {
     };
   }, [mobileOpen]);
 
+  const headerTop = announcementDismissed ? "top-0" : "top-9";
+  const mobileMenuTop = announcementDismissed ? "top-[64px]" : "top-[100px]";
+
   return (
     <>
       {/* Announcement bar */}
-      <div className="fixed top-0 left-0 right-0 z-[60] bg-accent text-white">
-        <div className="mx-auto flex h-9 max-w-[1280px] items-center justify-center gap-2 px-5 text-xs font-medium tracking-wide">
-          <NepalFlag className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Built in Kathmandu for 5M+ Nepalis across 100+ countries</span>
-          <span className="sm:hidden">For Nepalis worldwide</span>
-          <Link href="/#how-it-works" className="underline underline-offset-2 opacity-90 hover:opacity-100 transition-opacity">
-            Learn more
-          </Link>
+      {!announcementDismissed && (
+        <div
+          className={`fixed top-0 left-0 right-0 z-[60] bg-[#1B2D5E] text-white ${
+            announcementAnimating ? "announcement-dismissed" : ""
+          }`}
+        >
+          <div className="mx-auto flex h-9 max-w-[1280px] items-center justify-center gap-2 px-5 text-xs font-medium tracking-wide">
+            <NepalFlag className="h-3.5 w-3.5 shrink-0" />
+            <span className="hidden sm:inline">Built in Kathmandu · Smart guidance, Nepali roots — for 5M+ Nepalis worldwide</span>
+            <span className="sm:hidden">Smart guidance, Nepali roots</span>
+            <Link
+              href="/#how-it-works"
+              className="underline underline-offset-2 opacity-80 hover:opacity-100 transition-opacity ml-1"
+            >
+              Learn more
+            </Link>
+            <button
+              onClick={dismissAnnouncement}
+              aria-label="Dismiss announcement"
+              className="ml-3 flex h-5 w-5 items-center justify-center rounded-full opacity-60 hover:opacity-100 hover:bg-white/20 transition-all"
+            >
+              <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       <header
-        className={`fixed top-9 left-0 right-0 z-50 transition-all duration-300 ${
+        className={`fixed ${headerTop} left-0 right-0 z-50 transition-all duration-300 ${
           scrolled
             ? "bg-background/90 backdrop-blur-md border-b border-border"
             : "bg-transparent"
         }`}
       >
         <div className="mx-auto flex h-16 max-w-[1280px] items-center justify-between px-5 md:px-8">
-          <Link href="/" className="flex items-center gap-2 shrink-0">
+          <Link href="/" className="flex items-center gap-2.5 shrink-0">
             <Logo className="h-10 w-10" />
             <span className="text-lg font-bold tracking-tight hidden sm:block">Sarokar</span>
           </Link>
 
           {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-8">
-            {navLinks.map((link) => (
-              <Link
-                key={link.label}
-                href={link.href}
-                className="text-sm font-medium text-muted transition-colors hover:text-foreground"
-              >
-                {link.label}
-              </Link>
-            ))}
+            {navLinks.map((link) => {
+              const active = isActive(link.href);
+              return (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  aria-current={active ? "page" : undefined}
+                  className={`relative text-sm font-medium transition-colors hover:text-foreground ${
+                    link.kct
+                      ? active
+                        ? "text-[#F5A623]"
+                        : "text-[#E8920D] hover:text-[#F5A623]"
+                      : active
+                        ? "text-foreground"
+                        : "text-muted"
+                  }`}
+                >
+                  {link.kct && <span className="mr-0.5">🔥</span>}
+                  {link.label}
+                  {active && (
+                    <span
+                      className={`absolute -bottom-1 left-0 right-0 h-0.5 rounded-full ${
+                        link.kct ? "bg-[#F5A623]" : "bg-[#1B2D5E]"
+                      }`}
+                    />
+                  )}
+                </Link>
+              );
+            })}
           </nav>
 
           <div className="flex items-center gap-2">
@@ -121,15 +201,28 @@ export default function Navbar() {
               )}
             </button>
 
-            <Link
-              href="/chat"
-              className="hidden sm:inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:bg-accent-hover active:scale-[0.98]"
-            >
-              Ask Assistant
-              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-              </svg>
-            </Link>
+            {isKctPage ? (
+              <Link
+                href="/k-cha-ta/chat"
+                className="hidden sm:inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white shadow-sm transition-all active:scale-[0.98]"
+                style={{ background: "linear-gradient(135deg, #F5A623 0%, #E8920D 100%)" }}
+              >
+                Ask K Cha Ta?
+                <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                </svg>
+              </Link>
+            ) : (
+              <Link
+                href="/chat"
+                className="hidden sm:inline-flex items-center gap-2 rounded-lg bg-[#1B2D5E] px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:bg-[#0f1a3a] active:scale-[0.98]"
+              >
+                Ask Assistant
+                <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                </svg>
+              </Link>
+            )}
 
             {/* Mobile menu button */}
             <button
@@ -160,29 +253,64 @@ export default function Navbar() {
             className="absolute inset-0 bg-black/20 backdrop-blur-sm"
             onClick={() => setMobileOpen(false)}
           />
-          <div id="mobile-menu" role="dialog" aria-label="Navigation menu" className="absolute top-[100px] left-0 right-0 bg-background border-b border-border shadow-lg animate-fade-in">
+          <div
+            id="mobile-menu"
+            role="dialog"
+            aria-label="Navigation menu"
+            className={`absolute ${mobileMenuTop} left-0 right-0 bg-background border-b border-border shadow-lg animate-fade-in`}
+          >
             <nav className="flex flex-col px-5 py-6 gap-1">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.label}
-                  href={link.href}
-                  onClick={() => setMobileOpen(false)}
-                  className="flex items-center rounded-lg px-4 py-3 text-base font-medium text-foreground transition-colors hover:bg-surface"
-                >
-                  {link.label}
-                </Link>
-              ))}
+              {navLinks.map((link) => {
+                const active = isActive(link.href);
+                return (
+                  <Link
+                    key={link.label}
+                    href={link.href}
+                    onClick={() => setMobileOpen(false)}
+                    aria-current={active ? "page" : undefined}
+                    className={`flex items-center justify-between rounded-lg px-4 py-3 text-base font-medium transition-colors hover:bg-surface ${
+                      link.kct
+                        ? "text-[#E8920D]"
+                        : active
+                          ? "text-foreground bg-surface/60"
+                          : "text-foreground"
+                    }`}
+                  >
+                    <span>
+                      {link.kct && <span className="mr-1">🔥</span>}
+                      {link.label}
+                    </span>
+                    {active && (
+                      <span className={`h-1.5 w-1.5 rounded-full ${link.kct ? "bg-[#F5A623]" : "bg-[#1B2D5E]"}`} />
+                    )}
+                  </Link>
+                );
+              })}
               <div className="h-px bg-border my-2" />
-              <Link
-                href="/chat"
-                onClick={() => setMobileOpen(false)}
-                className="flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-3 text-base font-medium text-white transition-all active:scale-[0.98]"
-              >
-                Ask Assistant
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                </svg>
-              </Link>
+              {isKctPage ? (
+                <Link
+                  href="/k-cha-ta/chat"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-base font-medium text-white transition-all active:scale-[0.98]"
+                  style={{ background: "linear-gradient(135deg, #F5A623 0%, #E8920D 100%)" }}
+                >
+                  Ask K Cha Ta?
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                  </svg>
+                </Link>
+              ) : (
+                <Link
+                  href="/chat"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center justify-center gap-2 rounded-lg bg-[#1B2D5E] px-4 py-3 text-base font-medium text-white transition-all active:scale-[0.98]"
+                >
+                  Ask Assistant
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                  </svg>
+                </Link>
+              )}
             </nav>
           </div>
         </div>

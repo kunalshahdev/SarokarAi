@@ -226,6 +226,11 @@ input::placeholder {
   to { opacity: 1; transform: translateY(0) rotate(0deg); }
 }
 
+@keyframes connector-grow {
+  from { transform: scaleX(0); opacity: 0; }
+  to { transform: scaleX(1); opacity: 1; }
+}
+
 @keyframes drift {
   0%, 100% { transform: translateY(0px) rotate(0deg); }
   50% { transform: translateY(-6px) rotate(1deg); }
@@ -248,7 +253,6 @@ input::placeholder {
   animation: drift 5s ease-in-out 1s infinite;
 }
 
-@media (prefers-reduced-motion: reduce) {
 /* K Cha Ta sub-brand scope: re-map accent to amber inside /k-cha-ta
    so navbar CTA, focus rings, and ::selection follow the sub-brand */
 .kct-theme {
@@ -263,7 +267,8 @@ input::placeholder {
   --color-accent-light: #2A2510;
 }
 
-*,
+@media (prefers-reduced-motion: reduce) {
+  *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
@@ -274,6 +279,52 @@ input::placeholder {
 /* Smooth theme switch (structural surfaces only; utility transitions stay intact) */
 body {
   transition: background-color 150ms ease, color 150ms ease;
+}
+
+/* ── Nepal-brand utilities ── */
+.text-devanagari-display {
+  font-family: var(--font-devanagari), serif;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.gradient-nepal {
+  background: linear-gradient(135deg, #1B2D5E 0%, #0f1a3a 100%);
+}
+
+.gradient-amber {
+  background: linear-gradient(135deg, #F5A623 0%, #e8920d 100%);
+}
+
+@keyframes slide-up-out {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+    max-height: 40px;
+  }
+  to {
+    transform: translateY(-100%);
+    opacity: 0;
+    max-height: 0;
+    padding: 0;
+  }
+}
+
+.announcement-dismissed {
+  animation: slide-up-out 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.divider-nepal {
+  height: 2px;
+  background: linear-gradient(
+    to right,
+    #1B2D5E 0%,
+    #F5A623 50%,
+    rgba(255, 255, 255, 0.15) 100%
+  );
 }
 
 /* Print stylesheet */

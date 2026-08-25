@@ -1,5 +1,28 @@
-<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="40" height="40" rx="10" fill="#B3262D"/>
-  <path d="M7.5 28.5 14 13.5 20 22.5 26 13.5 32.5 28.5Z" fill="#FFFFFF" stroke="#FFFFFF" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"/>
-  <circle cx="28.75" cy="10" r="2.25" fill="#FFFFFF"/>
+<svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- White background -->
+  <rect width="44" height="44" rx="8" fill="white"/>
+
+  <!-- Left mountain peak (navy) -->
+  <polyline points="2,34 11,16 18,26" stroke="#1B2D5E" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
+
+  <!-- Right mountain peak (navy) -->
+  <polyline points="26,26 33,16 42,34" stroke="#1B2D5E" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
+
+  <!-- Amber triangle outline -->
+  <polygon points="22,5 36,34 8,34" stroke="#F5A623" stroke-width="2.5" stroke-linejoin="round" fill="none"/>
+
+  <!-- Pagoda base tier -->
+  <rect x="15" y="28" width="14" height="5" rx="0.5" fill="#1B2D5E"/>
+  <!-- Pagoda mid tier -->
+  <rect x="16.5" y="23.5" width="11" height="5" rx="0.5" fill="#1B2D5E"/>
+  <!-- Pagoda top tier -->
+  <rect x="18.5" y="19.5" width="7" height="4.5" rx="0.5" fill="#1B2D5E"/>
+  <!-- Spire -->
+  <line x1="22" y1="19.5" x2="22" y2="8.5" stroke="#1B2D5E" stroke-width="1.5" stroke-linecap="round"/>
+  <circle cx="22" cy="8" r="1" fill="#1B2D5E"/>
+
+  <!-- Roof accent lines amber -->
+  <line x1="14.5" y1="28" x2="29.5" y2="28" stroke="#F5A623" stroke-width="0.8"/>
+  <line x1="15.5" y1="23.5" x2="28.5" y2="23.5" stroke="#F5A623" stroke-width="0.8"/>
+  <line x1="17.5" y1="19.5" x2="26.5" y2="19.5" stroke="#F5A623" stroke-width="0.8"/>
 </svg>
