@@ -530,8 +530,8 @@ function KChaTaChatContent() {
                       {msg.content}
                     </div>
                   </div>
-                ) : (
-                  /* Assistant bubble */
+                ) : !(i === messages.length - 1 && isLoading && !msg.content) && (
+                  /* Assistant bubble — hidden entirely while waiting for the first token */
                   <div className="flex justify-start gap-2.5 max-w-[90%]">
                     <div className="shrink-0 mt-0.5">
                       <div className="h-8 w-8 rounded-lg bg-kct-accent/10 ring-1 ring-kct-accent/20 flex items-center justify-center">
@@ -662,8 +662,8 @@ function KChaTaChatContent() {
             ))}
           </div>
 
-          {/* ── Loading indicator ── */}
-          {isLoading && (
+          {/* ── Loading indicator — only until the first token arrives ── */}
+          {isLoading && !(messages.length > 0 && messages[messages.length - 1]?.role === "assistant" && messages[messages.length - 1]?.content) && (
             <div className="flex justify-start gap-2.5 animate-slide-in-left mt-5">
               <div className="shrink-0 mt-0.5">
                 <div className="h-8 w-8 rounded-lg bg-kct-accent/10 ring-1 ring-kct-accent/20 flex items-center justify-center">

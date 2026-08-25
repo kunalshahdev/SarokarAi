@@ -468,8 +468,8 @@ export default function ChatInterface({ initialQuery }: { initialQuery?: string 
                       {msg.content}
                     </div>
                   </div>
-                ) : (
-                  /* Assistant message */
+                ) : !(i === messages.length - 1 && isLoading && !msg.content) && (
+                  /* Assistant message — hidden entirely while waiting for the first token */
                   <div className="flex justify-start gap-2.5 max-w-[90%]">
                     {/* Avatar */}
                     <div className="shrink-0 mt-0.5">
@@ -482,7 +482,7 @@ export default function ChatInterface({ initialQuery }: { initialQuery?: string 
                       {/* Main text */}
                       <div className="rounded-2xl rounded-tl-md bg-chat-assistant border border-chat-assistant-border px-4 py-3 text-sm leading-relaxed">
                         <MarkdownRenderer content={msg.content} />
-                        {i === messages.length - 1 && isLoading && isStreaming && !msg.content && (
+                        {i === messages.length - 1 && isLoading && isStreaming && msg.content && (
                           <span className="inline-block w-1.5 h-4 bg-accent/40 animate-pulse ml-0.5 align-text-bottom" />
                         )}
                       </div>
@@ -716,8 +716,8 @@ export default function ChatInterface({ initialQuery }: { initialQuery?: string 
             ))}
           </div>
 
-          {/* Loading indicator */}
-          {isLoading && (
+          {/* Loading indicator — only until the first token arrives */}
+          {isLoading && !(messages.length > 0 && messages[messages.length - 1]?.role === "assistant" && messages[messages.length - 1]?.content) && (
             <div className="flex justify-start gap-2.5 animate-slide-in-left mt-5">
               <div className="shrink-0 mt-0.5">
                 <div className="h-8 w-8 rounded-lg bg-accent/10 flex items-center justify-center">
