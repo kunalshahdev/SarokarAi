@@ -75,8 +75,14 @@ export function checkRateLimit(
   config: RateLimitConfig
 ): RateLimitResult {
   const result = peekRateLimit(identifier, config);
-  if (result.allowed) recordHit(identifier, config);
-  return result;
+  if (!result.allowed) return result;
+  recordHit(identifier, config);
+  // Report quota truthfully *after* consuming this request.
+  return { ...result, remaining: Math.max(0, result.remaining - 1) };
+}
+
+export function resetRateLimits(): void {
+  store.clear();
 }
 
 export function getClientIdentifier(request: Request): string {
