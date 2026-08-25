@@ -220,7 +220,18 @@ function limitedResponse(
 export function mapProviderFailure(err: unknown): Response {
   if (err instanceof AllProvidersFailedError) {
     console.error("[ai] all providers failed", { attempts: err.attempts });
-    return jsonError(503, "providers_unavailable", FRIENDLY_MESSAGES.serviceBusy);
+    const meaningful = err.attempts.filter(
+      (a) => !a.endsWith(":not-configured") && !a.endsWith(":breaker-open")
+    );
+    const quotaExhausted =
+      meaningful.length > 0 && meaningful.every((a) => a.endsWith(":429"));
+    return jsonError(
+      503,
+      "providers_unavailable",
+      quotaExhausted
+        ? FRIENDLY_MESSAGES.allProvidersLimited
+        : FRIENDLY_MESSAGES.serviceBusy
+    );
   }
   if (err instanceof AIProviderError) {
     console.error("[ai] provider rejected request", {

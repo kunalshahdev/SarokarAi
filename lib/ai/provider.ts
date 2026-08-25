@@ -1,5 +1,10 @@
 import { MOCK_PROVIDER_ENABLED, PROVIDER_ORDER } from "./config";
 import {
+  isProviderAvailable,
+  recordProviderFailure,
+  recordProviderSuccess,
+} from "./circuit-breaker";
+import {
   AIProviderError,
   AllProvidersFailedError,
   isFailoverError,
@@ -8,15 +13,19 @@ import { withRetries } from "./retry";
 import type { AIProvider, ChatMessage, StreamChatOptions } from "./types";
 import { geminiProvider } from "./providers/gemini";
 import { groqProvider } from "./providers/groq";
+import { cerebrasProvider } from "./providers/cerebras";
+import { openRouterProvider } from "./providers/openrouter";
 import { mockProvider } from "./providers/mock";
 
 const REGISTRY: Record<string, AIProvider> = {
   gemini: geminiProvider,
   groq: groqProvider,
+  cerebras: cerebrasProvider,
+  openrouter: openRouterProvider,
   mock: mockProvider,
 };
 
-function orderedProviders(): AIProvider[] {
+function orderedProviders(registry: Record<string, AIProvider>): AIProvider[] {
   const order = MOCK_PROVIDER_ENABLED
     ? ["mock", ...PROVIDER_ORDER]
     : PROVIDER_ORDER;
@@ -25,7 +34,7 @@ function orderedProviders(): AIProvider[] {
   for (const id of order) {
     if (seen.has(id)) continue;
     seen.add(id);
-    const provider = REGISTRY[id];
+    const provider = registry[id];
     if (provider) providers.push(provider);
   }
   return providers;
@@ -38,11 +47,17 @@ export interface FallbackResult {
 
 export async function chatWithFallback(
   messages: ChatMessage[],
-  options: StreamChatOptions
+  options: StreamChatOptions,
+  registry: Record<string, AIProvider> = REGISTRY
 ): Promise<FallbackResult> {
   const attempts: string[] = [];
 
-  for (const provider of orderedProviders()) {
+  for (const provider of orderedProviders(registry)) {
+    if (!isProviderAvailable(provider.id)) {
+      attempts.push(`${provider.id}:breaker-open`);
+      continue;
+    }
+
     if (!provider.isConfigured()) {
       attempts.push(`${provider.id}:not-configured`);
       continue;
@@ -52,8 +67,13 @@ export async function chatWithFallback(
       const { value: stream } = await withRetries(
         provider.id,
         () => provider.streamChat(messages, options),
-        (err) => err.status !== undefined && err.status >= 400 && err.status < 500 && !isFailoverError(err)
+        (err) =>
+          err.status !== undefined &&
+          err.status >= 400 &&
+          err.status < 500 &&
+          !isFailoverError(err)
       );
+      recordProviderSuccess(provider.id);
       return { providerId: provider.id, stream };
     } catch (err) {
       if (!(err instanceof AIProviderError)) throw err;
@@ -64,6 +84,7 @@ export async function chatWithFallback(
         });
         throw err;
       }
+      recordProviderFailure(provider.id);
       attempts.push(...collectAttempts(provider.id, err));
       console.error(
         `[ai] provider failed, moving on -> ${provider.id}: ${err.message}`
