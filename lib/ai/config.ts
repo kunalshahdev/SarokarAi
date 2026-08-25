@@ -37,7 +37,12 @@ export const AI_LIMITS: Record<"guest" | "user" | "premium", TierLimit> = {
 
 export const IP_HOURLY_LIMIT = envInt("AI_IP_HOURLY_LIMIT", 60);
 
-export const PROVIDER_ORDER = envList("AI_PROVIDER_ORDER", ["gemini", "groq"]);
+export const PROVIDER_ORDER = envList("AI_PROVIDER_ORDER", [
+  "gemini",
+  "groq",
+  "cerebras",
+  "openrouter",
+]);
 
 export const RETRY_CONFIG = {
   maxRetriesPerProvider: envInt("AI_MAX_RETRIES_PER_PROVIDER", 2),
@@ -60,7 +65,11 @@ export const DEFAULTS = {
   temperature: 0.7,
   maxOutputTokens: envInt("AI_MAX_OUTPUT_TOKENS", 3072),
   geminiModel: process.env.GEMINI_MODEL || "gemini-3.6-flash",
-  groqModel: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
+  groqModel: process.env.GROQ_MODEL || "openai/gpt-oss-120b",
+  cerebrasModel: process.env.CEREBRAS_MODEL || "gpt-oss-120b",
+  openRouterModel:
+    process.env.OPENROUTER_MODEL ||
+    "nvidia/nemotron-3-super-120b-a12b:free",
 };
 
 export const MOCK_PROVIDER_ENABLED =
