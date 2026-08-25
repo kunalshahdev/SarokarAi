@@ -1,37 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sarokar — Nepal ko kaam, aba sajilo.
 
-## Getting Started
+AI-powered guide for Nepali government processes, documents, and everyday questions — plus **K Cha Ta?**, a live Nepali news engine with AI summaries written in Roman Nepali.
 
-First, run the development server:
+Built with Next.js (App Router), React 19, and Tailwind CSS 4.
+
+## Features
+
+- **Sarokar chat** — step-by-step guidance for PAN cards, passports, driving licences, citizenship and more, grounded in a curated verified-topic database (`lib/topics.ts`)
+- **K Cha Ta? news** — RSS ingestion from 11 Nepali publishers, keyword scoring for trending stories, on-demand article summaries with caching
+- **Resilient AI layer** (`lib/ai/`) — streaming responses with multi-provider failover:
+  `Gemini → Groq → Cerebras → OpenRouter` (all free tiers), with per-provider retries, exponential backoff, and a circuit breaker that stops hammering providers that keep failing
+- **Abuse protection** — per-session burst/daily limits, per-IP hourly guard, prompt sanitization, SSRF allowlist for article fetching
+- **SEO & sharing** — dynamic OG images, sitemap, robots, JSON-LD
+
+## Getting started
 
 ```bash
+npm install
+cp .env.example .env.local   # fill in at least GEMINI_API_KEY
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+See [.env.example](.env.example) for the full annotated list. Required:
 
-## Learn More
+| Variable | Purpose |
+|----------|---------|
+| `GEMINI_API_KEY` | Primary AI provider ([aistudio.google.com](https://aistudio.google.com)) |
+| `GROQ_API_KEY` | Failover provider ([console.groq.com](https://console.groq.com)) |
+| `CEREBRAS_API_KEY` | Optional failover ([cloud.cerebras.ai](https://cloud.cerebras.ai) — free tier needs billing info added first) |
+| `OPENROUTER_API_KEY` | Last-resort free-model provider ([openrouter.ai](https://openrouter.ai)) |
 
-To learn more about Next.js, take a look at the following resources:
+All AI keys are server-side only — they never reach the browser.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Scripts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npm run dev         # development server
+npm run build       # production build
+npm run lint        # eslint
+npm test            # unit tests (vitest)
+npm run test:watch  # tests in watch mode
+```
 
-## Deploy on Vercel
+## Architecture
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+app/
+  api/chat/                 # Sarokar chat endpoint (NDJSON stream)
+  api/kcha/                 # trending / news / summary endpoints
+components/
+  chat/                     # shared streaming chat UI
+  kchata/                   # K Cha Ta? feature components
+lib/
+  ai/                       # provider registry, failover, retries,
+    │                       # circuit breaker, rate limits, sessions
+    └── providers/          # gemini + OpenAI-compatible adapters
+  kcha/                     # news index (RSS), article fetcher (SSRF-safe)
+  topics.ts                 # verified government-process database
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# SarokarAi
+Request flow: client → route handler (`app/api/chat`) → validation & rate limits → topic lookup → `chatWithFallback()` tries providers in order until one streams → NDJSON stream to browser.
+
+## Deployment
+
+Deploys as a standard Next.js app (Vercel works out of the box). Set the environment variables above in your hosting dashboard. Never commit real keys.

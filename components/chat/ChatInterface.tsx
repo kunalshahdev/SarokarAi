@@ -794,6 +794,9 @@ export default function ChatInterface({ initialQuery }: { initialQuery?: string 
             <p className="mt-1.5 text-[11px] text-muted-light text-center sm:text-left">
               Press Enter to send &middot; <kbd className="px-1 py-0.5 rounded border border-border bg-card text-[10px]">⌘K</kbd> to focus &middot; Ask in English, नेपाली, or Roman Nepali
             </p>
+            <p className="text-[10px] text-muted-light/80 text-center sm:text-left">
+              AI answers can be wrong &mdash; always verify with the official office or website before acting.
+            </p>
           </form>
         </div>
       </div>
