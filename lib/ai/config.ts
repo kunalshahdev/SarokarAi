@@ -44,6 +44,11 @@ export const PROVIDER_ORDER = envList("AI_PROVIDER_ORDER", [
   "openrouter",
 ]);
 
+export const QUOTA_BREAKER_COOLDOWN_MS = envInt(
+  "AI_QUOTA_BREAKER_COOLDOWN_MS",
+  10 * 60 * 1000
+);
+
 export const RETRY_CONFIG = {
   maxRetriesPerProvider: envInt("AI_MAX_RETRIES_PER_PROVIDER", 2),
   baseDelayMs: envInt("AI_RETRY_BASE_DELAY_MS", 300),

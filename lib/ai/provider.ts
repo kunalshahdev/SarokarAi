@@ -1,4 +1,4 @@
-import { MOCK_PROVIDER_ENABLED, PROVIDER_ORDER } from "./config";
+import { MOCK_PROVIDER_ENABLED, PROVIDER_ORDER, QUOTA_BREAKER_COOLDOWN_MS } from "./config";
 import {
   isProviderAvailable,
   recordProviderFailure,
@@ -68,10 +68,11 @@ export async function chatWithFallback(
         provider.id,
         () => provider.streamChat(messages, options),
         (err) =>
-          err.status !== undefined &&
-          err.status >= 400 &&
-          err.status < 500 &&
-          !isFailoverError(err)
+          err.status === 429 ||
+          (err.status !== undefined &&
+            err.status >= 400 &&
+            err.status < 500 &&
+            !isFailoverError(err))
       );
       recordProviderSuccess(provider.id);
       return { providerId: provider.id, stream };
@@ -84,7 +85,13 @@ export async function chatWithFallback(
         });
         throw err;
       }
-      recordProviderFailure(provider.id);
+      const quotaLimited = err.status === 429;
+      recordProviderFailure(
+        provider.id,
+        quotaLimited
+          ? { failureThreshold: 1, cooldownMs: QUOTA_BREAKER_COOLDOWN_MS }
+          : {}
+      );
       attempts.push(...collectAttempts(provider.id, err));
       console.error(
         `[ai] provider failed, moving on -> ${provider.id}: ${err.message}`
@@ -96,6 +103,9 @@ export async function chatWithFallback(
 }
 
 function collectAttempts(id: string, err: unknown): string[] {
+  if (err instanceof AIProviderError && err.status === 429) {
+    return [`${id}:429`];
+  }
   const attached =
     err instanceof AIProviderError && Array.isArray(err.attempts)
       ? err.attempts.filter((a) => a.startsWith(`${id}:`))

@@ -67,7 +67,7 @@ describe("chatWithFallback", () => {
     expect(calls).toEqual(["first"]);
   });
 
-  it("fails over to the next provider when one is rate limited", async () => {
+  it("fails over instantly when one is rate limited (no quota-burning retries)", async () => {
     let limitedCalls = 0;
     const registry: Record<string, AIProvider> = {
       limited: fakeProvider("limited", async () => {
@@ -81,8 +81,24 @@ describe("chatWithFallback", () => {
       chatWithFallback([{ role: "user", content: "hi" }], { systemPrompt: "s" }, registry)
     ))[0] as { providerId: string };
 
-    expect(limitedCalls).toBeGreaterThan(1); // retried before giving up
+    expect(limitedCalls).toBe(1); // 429 fails fast, no retries against an exhausted key
     expect(result.providerId).toBe("healthy");
+  });
+
+  it("opens the circuit breaker immediately on rate limit (429)", async () => {
+    const registry: Record<string, AIProvider> = {
+      limited: fakeProvider("limited", async () => {
+        throw new AIProviderError("limited", "rate limited (429)", 429);
+      }),
+      healthy: fakeProvider("healthy", () => okStream()),
+    };
+
+    await chatWithFallback(
+      [{ role: "user", content: "hi" }],
+      { systemPrompt: "s" },
+      registry
+    );
+    expect(isProviderAvailable("limited")).toBe(false);
   });
 
   it("skips unconfigured providers", async () => {
