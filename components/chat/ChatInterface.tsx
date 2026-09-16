@@ -204,6 +204,7 @@ export default function ChatInterface({ initialQuery }: { initialQuery?: string 
       let buffer = "";
       let streamedText = "";
       let topicMeta: Record<string, unknown> | null = null;
+      let inlineError = "";
 
       while (true) {
         const { done, value } = await reader.read();
@@ -215,10 +216,11 @@ export default function ChatInterface({ initialQuery }: { initialQuery?: string 
           if (!line.trim()) continue;
           try {
             const parsed = JSON.parse(line);
-            if (parsed.topicMeta) {
-              topicMeta = parsed.topicMeta;
+            if (parsed.topicId) {
+              topicMeta = parsed;
             } else if (parsed.error) {
-              throw new Error(parsed.error);
+              inlineError = parsed.error;
+              break;
             } else if (parsed.text) {
               streamedText += parsed.text;
               // Update the streaming message in place (always target last message)
@@ -238,20 +240,43 @@ export default function ChatInterface({ initialQuery }: { initialQuery?: string 
         }
       }
 
-      // Finalize: attach topic data if available
+      // Finalize: attach topic data if available (verified card renders even when the AI is down)
       if (topicMeta) {
+        const aiDown = !streamedText && Boolean(inlineError);
+        const note =
+          "AI ahile dherai traffic ko karan busy cha — verified summary mathi chu. Pura jawab ko lagi Retry garnuhos.";
         setMessages((prev) => {
           if (prev.length === 0) return prev;
           const updated = [...prev];
           const lastIdx = updated.length - 1;
           updated[lastIdx] = {
             role: "assistant",
-            content: streamedText,
-            type: topicMeta.steps ? "steps" : "text",
+            content:
+              aiDown
+                ? note
+                : streamedText + (inlineError ? `\n\n(${inlineError})` : ""),
+            type:
+              aiDown
+                ? "error"
+                : topicMeta.steps
+                  ? "steps"
+                  : "text",
             steps: topicMeta.steps as Step[] | undefined,
             documents: topicMeta.documents as string[] | undefined,
             office: topicMeta.office as Office | undefined,
             source: topicMeta.source as Source | undefined,
+          };
+          return updated;
+        });
+      } else if (inlineError) {
+        setMessages((prev) => {
+          if (prev.length === 0) return prev;
+          const updated = [...prev];
+          const lastIdx = updated.length - 1;
+          updated[lastIdx] = {
+            role: "assistant",
+            content: streamedText || inlineError,
+            type: "error",
           };
           return updated;
         });
@@ -263,7 +288,7 @@ export default function ChatInterface({ initialQuery }: { initialQuery?: string 
           updated[lastIdx] = {
             role: "assistant",
             content: "Sorry, the AI could not generate a response. Please try rephrasing.",
-            type: "text",
+            type: "error",
           };
           return updated;
         });

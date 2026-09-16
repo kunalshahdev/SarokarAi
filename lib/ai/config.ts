@@ -46,7 +46,7 @@ export const PROVIDER_ORDER = envList("AI_PROVIDER_ORDER", [
 
 export const QUOTA_BREAKER_COOLDOWN_MS = envInt(
   "AI_QUOTA_BREAKER_COOLDOWN_MS",
-  10 * 60 * 1000
+  5 * 60 * 1000
 );
 
 export const RETRY_CONFIG = {
