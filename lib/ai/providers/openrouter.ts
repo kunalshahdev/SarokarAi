@@ -1,6 +1,7 @@
 import { DEFAULTS } from "../config";
 import type { AIProvider } from "../types";
 import { createOpenAICompatibleProvider } from "./openai-compatible";
+import { getSiteUrl } from "@/lib/site-url";
 
 export const openRouterProvider: AIProvider = createOpenAICompatibleProvider({
   id: "openrouter",
@@ -9,7 +10,7 @@ export const openRouterProvider: AIProvider = createOpenAICompatibleProvider({
   model: () => DEFAULTS.openRouterModel,
   extraHeaders: {
     // Optional attribution headers recommended by OpenRouter.
-    "HTTP-Referer": process.env.NEXT_PUBLIC_SITE_URL || "https://sarokar.app",
+    "HTTP-Referer": getSiteUrl(),
     "X-Title": "Sarokar",
   },
 });

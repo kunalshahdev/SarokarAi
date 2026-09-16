@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Noto_Sans_Devanagari } from "next/font/google";
 import { Toaster } from "@/components/shared/toast";
+import { getSiteUrl } from "@/lib/site-url";
 import "./globals.css";
 
 const inter = Inter({
@@ -18,7 +19,7 @@ const notoDevanagari = Noto_Sans_Devanagari({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://sarokar.app"),
+  metadataBase: new URL(getSiteUrl()),
   title: "Sarokar — Nepal ko kaam, aba sajilo.",
   description:
     "Government processes, documents, and everyday questions — figure out what you need, where to go, and what comes next.",
@@ -68,7 +69,7 @@ const jsonLd = {
   name: "Sarokar",
   description:
     "AI-powered guide for Nepali government processes, documents, and everyday questions — for Nepalis at home and worldwide.",
-  url: "https://sarokar.app",
+  url: getSiteUrl(),
   foundingLocation: {
     "@type": "Place",
     name: "Kathmandu, Nepal",
