@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Noto_Sans_Devanagari } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { Toaster } from "@/components/shared/toast";
 import { getSiteUrl } from "@/lib/site-url";
 import "./globals.css";
@@ -111,6 +112,7 @@ export default function RootLayout({
         </a>
         {children}
         <Toaster />
+        <Analytics />
       </body>
     </html>
   );
