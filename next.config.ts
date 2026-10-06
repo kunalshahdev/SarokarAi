@@ -8,7 +8,8 @@ const contentSecurityPolicy = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: https:",
   "font-src 'self' https://fonts.gstatic.com",
-  "connect-src 'self' https://generativelanguage.googleapis.com",
+  // All AI calls happen server-side, so the browser only talks to us.
+  "connect-src 'self'",
   "frame-ancestors 'none'",
 ].join("; ");
 

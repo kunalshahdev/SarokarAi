@@ -14,6 +14,9 @@ export const maxDuration = 60;
 const MAX_MESSAGES = 30;
 const RETRIEVAL_LIMIT = 6;
 const MAX_CONTEXT_CHARS = 9000;
+// News moves fast; reuse identical first questions only briefly. The live news
+// context is part of the cache key, so a feed refresh also starts fresh.
+const ANSWER_CACHE_TTL_MS = 10 * 60 * 1000;
 
 const SAFETY_SETTINGS: SafetySetting[] = [
   { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
@@ -249,6 +252,7 @@ export async function POST(request: NextRequest) {
   return handleChatRequest(request, {
     maxMessages: MAX_MESSAGES,
     safetySettings: SAFETY_SETTINGS,
+    answerCacheTtlMs: ANSWER_CACHE_TTL_MS,
     prepare: async (lastUserMessage, body) => {
       const requestedMode = typeof body.mode === "string" ? body.mode : "explain";
       const modeInstruction =

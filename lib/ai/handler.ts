@@ -3,7 +3,9 @@ import {
   AI_LIMITS,
   IP_HOURLY_LIMIT,
   REQUEST_CONFIG,
+  isLimitEnabled,
 } from "./config";
+import { answerCacheKey, getCachedAnswer, setCachedAnswer } from "./answer-cache";
 import { AllProvidersFailedError, AIProviderError } from "./errors";
 import { trimHistory } from "./history";
 import { FRIENDLY_MESSAGES } from "./messages";
@@ -32,6 +34,8 @@ export interface ChatHandlerOptions {
       }>;
   safetySettings?: SafetySetting[];
   maxMessages?: number;
+  /** How long to reuse answers to identical first questions. 0 = no caching. */
+  answerCacheTtlMs?: number;
 }
 
 function sanitize(input: string): string {
@@ -107,39 +111,46 @@ export async function handleChatRequest(
   const limits = AI_LIMITS[session.tier];
   const ip = getClientIdentifier(request);
 
-  const ipCheck = checkRateLimit(`ipguard:${ip}`, {
-    limit: IP_HOURLY_LIMIT,
-    windowMs: 60 * 60 * 1000,
-  });
-  if (!ipCheck.allowed) {
-    console.warn(`[limits] ip guard tripped for ${ip}`);
-    return jsonError(
-      429,
-      "ip_rate_limited",
-      FRIENDLY_MESSAGES.tooManyRequests,
-      { "Retry-After": String(ipCheck.retryAfterSec) }
-    );
+  if (isLimitEnabled(IP_HOURLY_LIMIT)) {
+    const ipCheck = checkRateLimit(`ipguard:${ip}`, {
+      limit: IP_HOURLY_LIMIT,
+      windowMs: 60 * 60 * 1000,
+    });
+    if (!ipCheck.allowed) {
+      console.warn(`[limits] ip guard tripped for ${ip}`);
+      return jsonError(
+        429,
+        "ip_rate_limited",
+        FRIENDLY_MESSAGES.tooManyRequests,
+        { "Retry-After": String(ipCheck.retryAfterSec) }
+      );
+    }
   }
 
-  const burstCheck = checkRateLimit(`${session.limitKey}:burst`, {
-    limit: limits.burstPerMinute,
-    windowMs: 60_000,
-  });
-  if (!burstCheck.allowed) {
-    return limitedResponse(session, burstCheck.retryAfterSec, FRIENDLY_MESSAGES.tooManyRequests);
+  if (isLimitEnabled(limits.burstPerMinute)) {
+    const burstCheck = checkRateLimit(`${session.limitKey}:burst`, {
+      limit: limits.burstPerMinute,
+      windowMs: 60_000,
+    });
+    if (!burstCheck.allowed) {
+      return limitedResponse(session, burstCheck.retryAfterSec, FRIENDLY_MESSAGES.tooManyRequests);
+    }
   }
 
   const dailyKey = `${session.limitKey}:daily`;
-  const dailyCheck = peekRateLimit(dailyKey, {
-    limit: limits.daily,
-    windowMs: DAY_MS,
-  });
-  if (!dailyCheck.allowed) {
-    return limitedResponse(
-      session,
-      dailyCheck.retryAfterSec,
-      FRIENDLY_MESSAGES.dailyLimitReached
-    );
+  const dailyEnabled = isLimitEnabled(limits.daily);
+  if (dailyEnabled) {
+    const dailyCheck = peekRateLimit(dailyKey, {
+      limit: limits.daily,
+      windowMs: DAY_MS,
+    });
+    if (!dailyCheck.allowed) {
+      return limitedResponse(
+        session,
+        dailyCheck.retryAfterSec,
+        FRIENDLY_MESSAGES.dailyLimitReached
+      );
+    }
   }
 
   const lastUserMessage =
@@ -150,10 +161,25 @@ export async function handleChatRequest(
     const encoder = new TextEncoder();
     const metaLine = prepared.meta ?? null;
 
+    const cacheTtl = options.answerCacheTtlMs ?? 0;
+    const cacheKey =
+      cacheTtl > 0 && messages.length === 1
+        ? answerCacheKey(prepared.systemPrompt, lastUserMessage)
+        : null;
+    const cachedText = cacheKey ? getCachedAnswer(cacheKey) : null;
+
     const stream = new ReadableStream<Uint8Array>({
       async start(controller) {
         if (metaLine) {
           controller.enqueue(encoder.encode(JSON.stringify(metaLine) + "\n"));
+        }
+
+        if (cachedText) {
+          controller.enqueue(
+            encoder.encode(JSON.stringify({ text: cachedText }) + "\n")
+          );
+          controller.close();
+          return;
         }
 
         let result: Awaited<ReturnType<typeof chatWithFallback>>;
@@ -182,17 +208,23 @@ export async function handleChatRequest(
           return;
         }
 
-        recordHit(dailyKey, {
-          limit: AI_LIMITS[session.tier].daily,
-          windowMs: DAY_MS,
-        });
+        if (dailyEnabled) {
+          recordHit(dailyKey, {
+            limit: limits.daily,
+            windowMs: DAY_MS,
+          });
+        }
 
+        let fullText = "";
         try {
           for await (const delta of result.stream) {
+            fullText += delta;
             controller.enqueue(
               encoder.encode(JSON.stringify({ text: delta }) + "\n")
             );
           }
+          // Only cache answers that streamed to completion.
+          if (cacheKey) setCachedAnswer(cacheKey, fullText, cacheTtl);
         } catch (err) {
           console.error("[ai] mid-stream failure", err);
           try {
