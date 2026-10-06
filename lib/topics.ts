@@ -733,3 +733,23 @@ export function findTopic(query: string): TopicData | undefined {
     })
   );
 }
+
+/**
+ * Most recent topic named in an earlier user message, skipping the latest one.
+ * Lets follow-ups like "kati din lagcha?" keep the verified topic context.
+ */
+export function findTopicInHistory(rawMessages: unknown): TopicData | undefined {
+  if (!Array.isArray(rawMessages)) return undefined;
+  const userTexts = rawMessages
+    .filter(
+      (m): m is { role: "user"; content: string } =>
+        (m as { role?: unknown })?.role === "user" &&
+        typeof (m as { content?: unknown })?.content === "string"
+    )
+    .map((m) => m.content);
+  for (let i = userTexts.length - 2; i >= 0; i--) {
+    const topic = findTopic(userTexts[i]);
+    if (topic) return topic;
+  }
+  return undefined;
+}

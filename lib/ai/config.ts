@@ -5,6 +5,19 @@ function envInt(name: string, fallback: number): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
+// Like envInt, but "0" is allowed and means "no limit".
+function envLimit(name: string, fallback: number): number {
+  const raw = process.env[name];
+  if (raw === undefined || raw.trim() === "") return fallback;
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+}
+
+/** A limit of 0 means the check is switched off. */
+export function isLimitEnabled(limit: number): boolean {
+  return limit > 0;
+}
+
 function envList(name: string, fallback: string[]): string[] {
   const raw = process.env[name];
   if (!raw) return fallback;
@@ -20,22 +33,28 @@ export interface TierLimit {
   burstPerMinute: number;
 }
 
+// Usage limits. 0 = unlimited.
+// Daily caps are OFF by default so people can use Sarokar freely. The only
+// guard left on is a per-minute burst limit that a human typing questions
+// never reaches — it just stops scripts from draining the AI providers' quota.
 export const AI_LIMITS: Record<"guest" | "user" | "premium", TierLimit> = {
   guest: {
-    daily: envInt("AI_GUEST_DAILY_LIMIT", 15),
-    burstPerMinute: envInt("AI_GUEST_BURST_PER_MINUTE", 8),
+    daily: envLimit("AI_GUEST_DAILY_LIMIT", 0),
+    burstPerMinute: envLimit("AI_GUEST_BURST_PER_MINUTE", 20),
   },
   user: {
-    daily: envInt("AI_USER_DAILY_LIMIT", 20),
-    burstPerMinute: envInt("AI_USER_BURST_PER_MINUTE", 12),
+    daily: envLimit("AI_USER_DAILY_LIMIT", 0),
+    burstPerMinute: envLimit("AI_USER_BURST_PER_MINUTE", 20),
   },
   premium: {
-    daily: envInt("AI_PREMIUM_DAILY_LIMIT", 100),
-    burstPerMinute: envInt("AI_PREMIUM_BURST_PER_MINUTE", 30),
+    daily: envLimit("AI_PREMIUM_DAILY_LIMIT", 0),
+    burstPerMinute: envLimit("AI_PREMIUM_BURST_PER_MINUTE", 30),
   },
 };
 
-export const IP_HOURLY_LIMIT = envInt("AI_IP_HOURLY_LIMIT", 60);
+// Per-IP hourly guard. Off by default: Nepali mobile networks put many users
+// behind one shared IP (CGNAT), so an IP cap blocks innocent people.
+export const IP_HOURLY_LIMIT = envLimit("AI_IP_HOURLY_LIMIT", 0);
 
 export const PROVIDER_ORDER = envList("AI_PROVIDER_ORDER", [
   "groq",

@@ -2,11 +2,13 @@ import { NextRequest } from "next/server";
 import { handleChatRequest } from "@/lib/ai/handler";
 import type { SafetySetting } from "@/lib/ai/types";
 import { systemPrompt } from "@/lib/prompts";
-import { findTopic } from "@/lib/topics";
+import { findTopic, findTopicInHistory } from "@/lib/topics";
 
 export const maxDuration = 60;
 
 const MAX_MESSAGES = 50;
+// Government-process answers rarely change hour to hour.
+const ANSWER_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 
 const SAFETY_SETTINGS: SafetySetting[] = [
   { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
@@ -23,8 +25,12 @@ export async function POST(request: NextRequest) {
   return handleChatRequest(request, {
     maxMessages: MAX_MESSAGES,
     safetySettings: SAFETY_SETTINGS,
-    prepare: (lastUserMessage) => {
-      const topic = findTopic(lastUserMessage);
+    answerCacheTtlMs: ANSWER_CACHE_TTL_MS,
+    prepare: (lastUserMessage, body) => {
+      const directTopic = findTopic(lastUserMessage);
+      // Follow-ups like "kati din lagcha?" don't name the topic, so carry the
+      // most recent topic from earlier in the conversation into the prompt.
+      const topic = directTopic ?? findTopicInHistory(body.messages);
 
       if (!topic) {
         return { systemPrompt, meta: null };
@@ -34,7 +40,7 @@ export async function POST(request: NextRequest) {
 
       return {
         systemPrompt: systemPrompt + topicContext,
-        meta: {
+        meta: directTopic ? {
           topicId: topic.id,
           topicTitle: topic.title,
           steps: topic.steps,
@@ -42,8 +48,9 @@ export async function POST(request: NextRequest) {
             topic.documents.length > 0 ? topic.documents : undefined,
           office: topic.office,
           source: topic.source,
-        },
+        } : null,
       };
     },
   });
 }
+

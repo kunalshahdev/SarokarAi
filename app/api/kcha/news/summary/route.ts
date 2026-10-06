@@ -110,8 +110,10 @@ export async function POST(request: NextRequest) {
   }
 
   const ip = getClientIdentifier(request);
+  // Generous: summaries are cached per article, and many Nepali mobile users
+  // share one IP (CGNAT). This only stops scripted abuse.
   const rl = checkRateLimit(`kct-summary:${ip}`, {
-    limit: 30,
+    limit: 120,
     windowMs: 60_000,
   });
   if (!rl.allowed) {
